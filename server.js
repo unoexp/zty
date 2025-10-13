@@ -43,7 +43,7 @@ initDataFile('photos.json', []);
 initDataFile('messages.json', []);
 initDataFile('admin.json', { password: '232323' }); // 默认管理员密码
 initDataFile('comments.json', []);
-initDataFile('memoryComments.json', {});
+// initDataFile('memoryComments.json', {});
 
 // 数据操作函数（统一使用这组，避免重复）
 const readData = (filename) => {
@@ -148,10 +148,21 @@ app.post('/api/admin/login', (req, res) => {
 app.get('/api/memories/:memoryId/comments', (req, res) => {
     try {
         const { memoryId } = req.params;
-        const allComments = readData('memoryComments.json');
+        const memories = readData('memories.json');
+        const memory = memories.find(m => m.id === parseInt(memoryId));
+        
+        if (!memory) {
+            return res.status(404).json({
+                success: false,
+                message: '回忆不存在'
+            });
+        }
         
         // 返回指定回忆的评论，默认空数组
-        res.json(allComments[memoryId] || []);
+        res.json({
+            success: true,
+            comments: memory.comments || []
+        });
     } catch (error) {
         console.error('获取回忆评论失败:', error);
         res.status(500).json({ 
@@ -175,6 +186,17 @@ app.post('/api/memories/:memoryId/comments', (req, res) => {
             });
         }
         
+        // 读取现有回忆
+        const memories = readData('memories.json');
+        const memoryIndex = memories.findIndex(m => m.id === parseInt(memoryId));
+        
+        if (memoryIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: '回忆不存在'
+            });
+        }
+        
         // 创建评论对象
         const comment = {
             id: Date.now().toString(),
@@ -183,19 +205,16 @@ app.post('/api/memories/:memoryId/comments', (req, res) => {
             date: new Date().toISOString()
         };
         
-        // 读取现有评论
-        const allComments = readData('memoryComments.json');
-        
         // 初始化该回忆的评论数组（如果不存在）
-        if (!allComments[memoryId]) {
-            allComments[memoryId] = [];
+        if (!memories[memoryIndex].comments) {
+            memories[memoryIndex].comments = [];
         }
         
         // 添加新评论
-        allComments[memoryId].push(comment);
+        memories[memoryIndex].comments.push(comment);
         
-        // 保存到文件
-        const saveSuccess = writeData('memoryComments.json', allComments);
+        // 保存到回忆文件
+        const saveSuccess = writeData('memories.json', memories);
         
         if (saveSuccess) {
             res.json({
