@@ -1017,7 +1017,11 @@
                     thumbnailUrl: photo.thumbnailUrl 
                         ? (photo.thumbnailUrl.startsWith('http') ? photo.thumbnailUrl : `${API_BASE_URL}${photo.thumbnailUrl}`)
                         : (photo.url.startsWith('http') ? photo.url : `${API_BASE_URL}${photo.url}`)
-                }));
+                }))
+                .sort((a, b) => {
+                    // 按timestamp降序排序，确保新照片在前面
+                    return b.timestamp - a.timestamp;
+                });
                 
                 // 保存到本地存储作为备份
                 savePhotosToLocalStorage();
