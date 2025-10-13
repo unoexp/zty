@@ -43,6 +43,7 @@ initDataFile('photos.json', []);
 initDataFile('messages.json', []);
 initDataFile('admin.json', { password: '232323' }); // 默认管理员密码
 initDataFile('comments.json', []);
+initDataFile('memoryComments.json', {});
 
 // 数据操作函数（统一使用这组，避免重复）
 const readData = (filename) => {
@@ -139,6 +140,80 @@ app.post('/api/admin/login', (req, res) => {
         res.json({ success: true });
     } else {
         res.status(401).json({ success: false, message: '密码错误' });
+    }
+});
+
+
+// 获取指定回忆的评论
+app.get('/api/memories/:memoryId/comments', (req, res) => {
+    try {
+        const { memoryId } = req.params;
+        const allComments = readData('memoryComments.json');
+        
+        // 返回指定回忆的评论，默认空数组
+        res.json(allComments[memoryId] || []);
+    } catch (error) {
+        console.error('获取回忆评论失败:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: '获取评论失败' 
+        });
+    }
+});
+
+// 添加回忆评论
+app.post('/api/memories/:memoryId/comments', (req, res) => {
+    try {
+        const { memoryId } = req.params;
+        const { content, author } = req.body;
+        
+        // 验证必要字段
+        if (!content || !author || !['his', 'her'].includes(author)) {
+            return res.status(400).json({
+                success: false,
+                message: '评论内容和作者信息不能为空'
+            });
+        }
+        
+        // 创建评论对象
+        const comment = {
+            id: Date.now().toString(),
+            content,
+            author,
+            date: new Date().toISOString()
+        };
+        
+        // 读取现有评论
+        const allComments = readData('memoryComments.json');
+        
+        // 初始化该回忆的评论数组（如果不存在）
+        if (!allComments[memoryId]) {
+            allComments[memoryId] = [];
+        }
+        
+        // 添加新评论
+        allComments[memoryId].push(comment);
+        
+        // 保存到文件
+        const saveSuccess = writeData('memoryComments.json', allComments);
+        
+        if (saveSuccess) {
+            res.json({
+                success: true,
+                comment
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: '保存评论失败'
+            });
+        }
+    } catch (error) {
+        console.error('添加回忆评论失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器错误，添加评论失败'
+        });
     }
 });
 

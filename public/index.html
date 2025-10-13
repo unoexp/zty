@@ -548,7 +548,7 @@
             }
             
             // 按日期倒序排列
-            const sortedMemories = [...memories].sort((a, b) => new Date(b.date) - new Date(a.date));
+            const sortedMemories = [...memories].sort((a, b) => new Date(a.date) - new Date(b.date));
             
             sortedMemories.forEach(memory => {
                 addMemoryToDOM(memory);
@@ -1079,14 +1079,14 @@
             });
             
             // 图片查看器相关
-            document.getElementById('photo-viewer-backdrop').addEventListener('click', closePhotoViewer);
-            document.getElementById('close-viewer').addEventListener('click', closePhotoViewer);
-            document.getElementById('prev-photo').addEventListener('click', showPrevPhoto);
-            document.getElementById('next-photo').addEventListener('click', showNextPhoto);
-            document.getElementById('add-comment-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                addPhotoComment();
-            });
+            // document.getElementById('photo-viewer-backdrop').addEventListener('click', closePhotoViewer);
+            // document.getElementById('close-viewer').addEventListener('click', closePhotoViewer);
+            // document.getElementById('prev-photo').addEventListener('click', showPrevPhoto);
+            // document.getElementById('next-photo').addEventListener('click', showNextPhoto);
+            // document.getElementById('add-comment-form').addEventListener('submit', (e) => {
+            //     e.preventDefault();
+            //     addPhotoComment();
+            // });
         }
         // 生成缩略图
         function generateThumbnail(file) {
@@ -1404,7 +1404,7 @@
             }
             
             // 按日期倒序排列
-            const sortedMessages = [...messages].sort((a, b) => new Date(b.date) - new Date(a.date));
+            const sortedMessages = [...messages].sort((a, b) => new Date(a.date) - new Date(b.date));
             
             sortedMessages.forEach(message => {
                 addMessageToDOM(message);
@@ -1534,7 +1534,7 @@
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit'
+        // second: '2-digit'
     });
       }
     </script>
