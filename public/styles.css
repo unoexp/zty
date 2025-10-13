@@ -1,0 +1,180 @@
+/* 基础样式增强 */
+body {
+    background-color: #f9f7f5;
+    color: #333333; /* 加深文本颜色 */
+}
+
+/* 增强按钮样式 */
+button, .btn {
+    transition: all 0.3s ease;
+}
+
+/* 主按钮样式 */
+.bg-primary {
+    background-color: #3b82f6 !important; /* 更深的蓝色 */
+    color: white !important;
+}
+
+.bg-primary:hover {
+    background-color: #2563eb !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* 次要按钮样式 */
+.border border-gray-300 {
+    border-color: #d1d5db !important;
+    color: #4b5563 !important;
+}
+
+.border border-gray-300:hover {
+    background-color: #f3f4f6 !important;
+    border-color: #9ca3af !important;
+}
+
+/* 危险按钮（删除等） */
+.text-red-600 {
+    color: #dc2626 !important;
+}
+
+.text-red-600:hover {
+    color: #b91c1c !important;
+}
+
+/* 链接样式 */
+a {
+    color: #1d4ed8 !important; /* 更深的链接色 */
+    font-weight: 500;
+}
+
+a:hover {
+    color: #1e40af !important;
+    text-decoration: underline;
+}
+
+/* 导航栏样式增强 */
+nav {
+    background-color: white !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+nav a {
+    color: #4b5563 !important;
+    font-weight: 500;
+}
+
+nav a:hover {
+    color: #1e40af !important;
+}
+
+/* 卡片和容器样式 */
+.bg-white {
+    background-color: white !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    border-radius: 0.5rem;
+}
+
+/* 标题样式 */
+h1, h2, h3, h4, h5, h6 {
+    color: #1e293b !important; /* 更深的标题色 */
+    font-weight: 600;
+}
+
+/* 表单元素增强 */
+input, textarea, select {
+    border-color: #9ca3af !important;
+    color: #1e293b !important;
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* 视角指示器增强 */
+#user-indicator {
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 他的视角颜色增强 */
+.bg-his-primary {
+    background-color: #2563eb !important;
+}
+
+.text-his-dark {
+    color: #1e3a8a !important;
+}
+
+.bg-his-light {
+    background-color: #dbeafe !important;
+}
+
+/* 她的视角颜色增强 */
+.bg-her-primary {
+    background-color: #db2777 !important;
+}
+
+.text-her-dark {
+    color: #831843 !important;
+}
+
+.bg-her-light {
+    background-color: #fee2e2 !important;
+}
+
+/* 状态标签增强 */
+.bg-green-100 {
+    background-color: #dcfce7 !important;
+}
+
+.text-green-800 {
+    color: #166534 !important;
+}
+
+.bg-red-100 {
+    background-color: #fee2e2 !important;
+}
+
+.text-red-800 {
+    color: #991b1b !important;
+}
+
+/* 表格样式增强 */
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+th {
+    background-color: #f8fafc !important;
+    color: #334155 !important;
+    font-weight: 600;
+}
+
+tr:hover {
+    background-color: #f8fafc !important;
+}
+
+/* 模态框增强 */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* 照片网格样式 */
+.photo-grid {
+    gap: 1.5rem;
+}
+
+/* 响应式调整 */
+@media (max-width: 640px) {
+    body {
+        padding: 0;
+    }
+    
+    .container {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+}
+    

@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员后台 - 我们的故事</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#db2777',
+                        neutral: '#64748b'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .admin-card {
+                @apply bg-white rounded-xl shadow-md p-6 transition-all hover:shadow-lg;
+            }
+            .btn-action {
+                @apply px-3 py-1 rounded-md text-sm transition-all;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-primary/90;
+            }
+            .btn-danger {
+                @apply bg-red-500 text-white hover:bg-red-600;
+            }
+            .btn-secondary {
+                @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+            }
+            .fade-in {
+                animation: fadeIn 0.3s ease-in-out;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 text-gray-800 min-h-screen">
+    <!-- 登录页面 -->
+    <div id="login-page" class="flex items-center justify-center min-h-screen p-4 fade-in">
+        <div class="w-full max-w-md">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-primary mb-2">管理员后台</h1>
+                <p class="text-gray-500">请输入密码登录</p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-8 transform transition-all hover:shadow-xl">
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">管理员密码</label>
+                        <div class="relative">
+                            <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="请输入密码">
+                            <button type="button" id="toggle-password" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                                <i class="fa fa-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="login-error" class="hidden text-red-500 text-sm mt-1"></div>
+                    
+                    <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition flex items-center justify-center">
+                        <i class="fa fa-sign-in mr-2"></i>登录
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理页面（默认隐藏） -->
+    <div id="admin-page" class="hidden">
+        <!-- 顶部导航 -->
+        <header class="bg-white shadow-sm sticky top-0 z-10">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-primary">
+                        <i class="fa fa-cogs mr-2"></i>管理员后台
+                    </h1>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button id="change-password-btn" class="text-gray-600 hover:text-primary transition flex items-center">
+                        <i class="fa fa-key mr-1"></i> 修改密码
+                    </button>
+                    <button id="logout-btn" class="text-gray-600 hover:text-red-500 transition flex items-center">
+                        <i class="fa fa-sign-out mr-1"></i> 退出登录
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="container mx-auto px-4 py-8">
+            <!-- 统计卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="admin-card border-l-4 border-primary transform transition-all hover:-translate-y-1">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">回忆总数</p>
+                            <h3 class="text-3xl font-bold mt-1" id="memories-count">0</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <i class="fa fa-book text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="admin-card border-l-4 border-secondary transform transition-all hover:-translate-y-1">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">照片总数</p>
+                            <h3 class="text-3xl font-bold mt-1" id="photos-count">0</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+                            <i class="fa fa-image text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="admin-card border-l-4 border-neutral transform transition-all hover:-translate-y-1">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500 text-sm">悄悄话总数</p>
+                            <h3 class="text-3xl font-bold mt-1" id="messages-count">0</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-neutral/10 flex items-center justify-center text-neutral">
+                            <i class="fa fa-comment text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 内容管理选项卡 -->
+            <div class="mb-6 border-b border-gray-200">
+                <ul class="flex flex-wrap -mb-px" id="tabs" role="tablist">
+                    <li class="mr-2" role="presentation">
+                        <button class="inline-block p-4 border-b-2 border-primary text-primary font-medium" id="memories-tab" data-target="memories-content" type="button" role="tab">
+                            <i class="fa fa-book mr-1"></i>回忆管理
+                        </button>
+                    </li>
+                    <li class="mr-2" role="presentation">
+                        <button class="inline-block p-4 border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300" id="photos-tab" data-target="photos-content" type="button" role="tab">
+                            <i class="fa fa-image mr-1"></i>照片管理
+                        </button>
+                    </li>
+                    <li role="presentation">
+                        <button class="inline-block p-4 border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300" id="messages-tab" data-target="messages-content" type="button" role="tab">
+                            <i class="fa fa-comment mr-1"></i>悄悄话管理
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 照片上传区域（仅在照片管理选项卡显示） -->
+            <div id="photos-upload-section" class="admin-card mb-6 hidden">
+                <h3 class="text-lg font-semibold mb-4">上传新照片</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- 单张上传 -->
+                    <div class="border border-dashed border-gray-300 rounded-lg p-4 hover:border-primary transition-colors">
+                        <h4 class="font-medium mb-3 flex items-center">
+                            <i class="fa fa-upload mr-2 text-primary"></i>单张上传
+                        </h4>
+                        <form id="single-upload-form" class="space-y-3">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">照片</label>
+                                <input type="file" id="single-photo" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer">
+                            </div>
+                            <div>
+                                <label for="single-caption" class="block text-sm text-gray-600 mb-1">描述</label>
+                                <input type="text" id="single-caption" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="添加照片描述">
+                            </div>
+                            <div>
+                                <label for="single-author" class="block text-sm text-gray-600 mb-1">作者</label>
+                                <select id="single-author" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition">
+                                    <option value="his">他</option>
+                                    <option value="her">她</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full btn-action btn-primary">
+                                <i class="fa fa-picture-o mr-1"></i>上传照片
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- 批量上传 -->
+                    <div class="border border-dashed border-gray-300 rounded-lg p-4 hover:border-primary transition-colors md:col-span-2">
+                        <h4 class="font-medium mb-3 flex items-center">
+                            <i class="fa fa-files-o mr-2 text-primary"></i>批量上传
+                        </h4>
+                        <form id="batch-upload-form" class="space-y-3">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">选择多张照片</label>
+                                <input type="file" id="batch-photos" accept="image/*" multiple class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer">
+                                <p class="text-xs text-gray-500 mt-1">支持JPG、PNG、GIF、WebP格式，单张不超过50MB</p>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label for="batch-description" class="block text-sm text-gray-600 mb-1">统一描述</label>
+                                    <input type="text" id="batch-description" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="为所有照片添加统一描述">
+                                </div>
+                                <div>
+                                    <label for="batch-author" class="block text-sm text-gray-600 mb-1">作者</label>
+                                    <select id="batch-author" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition">
+                                        <option value="his">他</option>
+                                        <option value="her">她</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full btn-action btn-primary">
+                                <i class="fa fa-upload mr-1"></i>批量上传
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 回忆管理内容 -->
+            <div id="memories-content" class="tab-content">
+                <div class="admin-card mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">回忆列表</h2>
+                        <div class="relative">
+                            <input type="text" id="memories-search" class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="搜索回忆...">
+                            <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">标题</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日期</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">作者</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="memories-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- 回忆数据将通过JS动态加载 -->
+                                <tr>
+                                    <td colspan="5" class="px-6 py-10 text-center text-gray-500">
+                                        <i class="fa fa-spinner fa-spin mr-2"></i>加载中...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 照片管理内容 -->
+            <div id="photos-content" class="tab-content hidden">
+                <div class="admin-card mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">照片列表</h2>
+                        <div class="relative">
+                            <input type="text" id="photos-search" class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="搜索照片描述或文件名...">
+                            <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                    </div>
+                    
+                    <div id="photos-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        <!-- 照片数据将通过JS动态加载 -->
+                        <div class="col-span-full text-center text-gray-500 py-10">
+                            <i class="fa fa-spinner fa-spin mr-2"></i>加载中...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 悄悄话管理内容 -->
+            <div id="messages-content" class="tab-content hidden">
+                <div class="admin-card mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">悄悄话列表</h2>
+                        <div class="relative">
+                            <input type="text" id="messages-search" class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="搜索消息内容...">
+                            <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4" id="messages-list">
+                        <!-- 悄悄话数据将通过JS动态加载 -->
+                        <div class="text-center text-gray-500 py-10">
+                            <i class="fa fa-spinner fa-spin mr-2"></i>加载中...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 修改密码模态框 -->
+    <div id="password-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden fade-in">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" id="modal-backdrop"></div>
+        <div class="relative bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">修改管理员密码</h3>
+                <button id="close-modal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="change-password-form" class="space-y-4">
+                <div>
+                    <label for="current-password" class="block text-sm font-medium text-gray-700 mb-1">当前密码</label>
+                    <input type="password" id="current-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="请输入当前密码">
+                </div>
+                
+                <div>
+                    <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">新密码</label>
+                    <input type="password" id="new-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="请输入新密码（至少6位）">
+                </div>
+                
+                <div>
+                    <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">确认新密码</label>
+                    <input type="password" id="confirm-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="请再次输入新密码">
+                </div>
+                
+                <div id="password-error" class="hidden text-red-500 text-sm mt-1"></div>
+                
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" id="cancel-password" class="btn-action btn-secondary">取消</button>
+                    <button type="submit" class="btn-action btn-primary">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 通知提示组件 -->
+    <div id="notification" class="fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center max-w-sm"></div>
+
+    <script>
+        // 配置API基础URL
+        const API_BASE_URL = 'http://106.15.93.94:3000';
+        let memories = [];
+        let photos = [];
+        let messages = [];
+
+        // DOM加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查是否已登录
+            if (localStorage.getItem('adminLoggedIn') === 'true') {
+                showAdminPage();
+                loadAllData();
+            } else {
+                showLoginPage();
+            }
+
+            // 初始化事件监听
+            initEventListeners();
+        });
+
+        // 初始化事件监听
+        function initEventListeners() {
+            // 登录表单提交
+            document.getElementById('login-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleLogin();
+            });
+
+            // 切换密码可见性
+            document.getElementById('toggle-password').addEventListener('click', function() {
+                const passwordInput = document.getElementById('password');
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                // 切换图标
+                this.innerHTML = type === 'password' ? 
+                    '<i class="fa fa-eye-slash"></i>' : 
+                    '<i class="fa fa-eye"></i>';
+            });
+
+            // 退出登录
+            document.getElementById('logout-btn').addEventListener('click', handleLogout);
+
+            // 选项卡切换
+            document.querySelectorAll('#tabs button').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 移除所有选项卡的激活状态
+                    document.querySelectorAll('#tabs button').forEach(t => {
+                        t.classList.remove('border-primary', 'text-primary');
+                        t.classList.add('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300');
+                    });
+
+                    // 激活当前选项卡
+                    this.classList.remove('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300');
+                    this.classList.add('border-primary', 'text-primary');
+
+                    // 隐藏所有内容
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+
+                    // 显示照片上传区域（仅在照片选项卡）
+                    if (this.id === 'photos-tab') {
+                        document.getElementById('photos-upload-section').classList.remove('hidden');
+                    } else {
+                        document.getElementById('photos-upload-section').classList.add('hidden');
+                    }
+
+                    // 显示当前选项卡对应的内容
+                    const target = this.getAttribute('data-target');
+                    document.getElementById(target).classList.remove('hidden');
+                });
+            });
+
+            // 修改密码相关
+            document.getElementById('change-password-btn').addEventListener('click', function() {
+                document.getElementById('password-modal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            });
+
+            document.getElementById('close-modal').addEventListener('click', closePasswordModal);
+            document.getElementById('cancel-password').addEventListener('click', closePasswordModal);
+            document.getElementById('modal-backdrop').addEventListener('click', closePasswordModal);
+
+            document.getElementById('change-password-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleChangePassword();
+            });
+
+            // 搜索功能
+            document.getElementById('memories-search').addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                const filtered = memories.filter(memory => 
+                    memory.title.toLowerCase().includes(searchTerm) || 
+                    memory.content.toLowerCase().includes(searchTerm)
+                );
+                renderMemoriesTable(filtered);
+            });
+
+            document.getElementById('photos-search').addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                const filtered = photos.filter(photo => 
+                    (photo.description && photo.description.toLowerCase().includes(searchTerm)) ||
+                    (photo.originalname && photo.originalname.toLowerCase().includes(searchTerm))
+                );
+                renderPhotosGrid(filtered);
+            });
+
+            document.getElementById('messages-search').addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                const filtered = messages.filter(message => 
+                    message.content.toLowerCase().includes(searchTerm)
+                );
+                renderMessagesList(filtered);
+            });
+
+            // 照片上传表单
+            document.getElementById('single-upload-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleSinglePhotoUpload();
+            });
+
+            document.getElementById('batch-upload-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleBatchPhotoUpload();
+            });
+        }
+
+        // 显示通知
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform translate-y-0 opacity-100 transition-all duration-300 flex items-center max-w-sm ${
+                isError ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+            }`;
+            
+            setTimeout(() => {
+                notification.classList.remove('translate-y-0', 'opacity-100');
+                notification.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // 处理登录
+        function handleLogin() {
+            const password = document.getElementById('password').value;
+            const errorElement = document.getElementById('login-error');
+
+            if (!password) {
+                errorElement.textContent = '请输入密码';
+                errorElement.classList.remove('hidden');
+                return;
+            }
+
+            // 发送登录请求
+            fetch(`${API_BASE_URL}/api/admin/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ password })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('密码错误');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // 登录成功
+                    localStorage.setItem('adminLoggedIn', 'true');
+                    showAdminPage();
+                    loadAllData();
+                } else {
+                    throw new Error(data.message || '登录失败');
+                }
+            })
+            .catch(error => {
+                errorElement.textContent = error.message;
+                errorElement.classList.remove('hidden');
+            });
+        }
+
+        // 处理退出登录
+        function handleLogout() {
+            if (confirm('确定要退出登录吗？')) {
+                localStorage.removeItem('adminLoggedIn');
+                showLoginPage();
+            }
+        }
+
+        // 处理修改密码
+        function handleChangePassword() {
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const errorElement = document.getElementById('password-error');
+
+            // 验证
+            if (!currentPassword) {
+                errorElement.textContent = '请输入当前密码';
+                errorElement.classList.remove('hidden');
+                return;
+            }
+
+            if (!newPassword || newPassword.length < 6) {
+                errorElement.textContent = '新密码长度不能少于6位';
+                errorElement.classList.remove('hidden');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                errorElement.textContent = '两次输入的新密码不一致';
+                errorElement.classList.remove('hidden');
+                return;
+            }
+
+            // 发送修改密码请求
+            fetch(`${API_BASE_URL}/api/admin/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    password: currentPassword,
+                    newPassword: newPassword
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || '修改密码失败');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showNotification('密码修改成功，请重新登录');
+                    closePasswordModal();
+                    document.getElementById('change-password-form').reset();
+                    handleLogout();
+                }
+            })
+            .catch(error => {
+                errorElement.textContent = error.message;
+                errorElement.classList.remove('hidden');
+            });
+        }
+
+        // 关闭密码模态框
+        function closePasswordModal() {
+            document.getElementById('password-modal').classList.add('hidden');
+            document.body.style.overflow = '';
+            document.getElementById('password-error').classList.add('hidden');
+        }
+
+        // 显示登录页面
+        function showLoginPage() {
+            document.getElementById('login-page').classList.remove('hidden');
+            document.getElementById('admin-page').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        // 显示管理页面
+        function showAdminPage() {
+            document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('admin-page').classList.remove('hidden');
+            document.getElementById('password').value = '';
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        // 加载所有数据
+        function loadAllData() {
+            loadMemories();
+            loadPhotos();
+            loadMessages();
+        }
+
+        // 加载回忆数据
+        function loadMemories() {
+            fetch(`${API_BASE_URL}/api/memories`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('加载回忆失败');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    memories = data;
+                    renderMemoriesTable(memories);
+                    document.getElementById('memories-count').textContent = memories.length;
+                })
+                .catch(error => {
+                    console.error('加载回忆失败:', error);
+                    document.getElementById('memories-table-body').innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-6 py-10 text-center text-red-500">
+                                加载回忆失败: ${error.message}
+                            </td>
+                        </tr>
+                    `;
+                });
+        }
+
+        // 渲染回忆表格
+        function renderMemoriesTable(data) {
+            const tableBody = document.getElementById('memories-table-body');
+            
+            if (data.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-10 text-center text-gray-500">
+                            暂无回忆数据
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // 按日期倒序排列
+            const sortedData = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            tableBody.innerHTML = '';
+            sortedData.forEach(memory => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${memory.title}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500">${formatDate(memory.date)}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${memory.author === 'his' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}">
+                            ${memory.author === 'his' ? '他' : '她'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${memory.visible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${memory.visible ? '可见' : '隐藏'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="btn-action ${memory.visible ? 'bg-yellow-500 hover:bg-yellow-600' : 'btn-primary'} text-white mr-2" 
+                                onclick="toggleMemoryVisibility(${memory.id}, ${!memory.visible})">
+                            ${memory.visible ? '隐藏' : '显示'}
+                        </button>
+                        <button class="btn-action btn-danger" onclick="deleteMemory(${memory.id})">
+                            删除
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 切换回忆可见性
+        function toggleMemoryVisibility(id, visible) {
+            fetch(`${API_BASE_URL}/api/memories/${id}/visibility`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ visible })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('更新失败');
+                }
+                return response.json();
+            })
+            .then(() => {
+                // 更新本地数据并重新渲染
+                const memory = memories.find(m => m.id === id);
+                if (memory) {
+                    memory.visible = visible;
+                    renderMemoriesTable(memories);
+                    showNotification(`回忆已${visible ? '显示' : '隐藏'}`);
+                }
+            })
+            .catch(error => {
+                console.error('更新回忆失败:', error);
+                showNotification('操作失败: ' + error.message, true);
+            });
+        }
+
+        // 删除回忆
+        function deleteMemory(id) {
+            if (!confirm('确定要删除这条回忆吗？此操作不可恢复！')) {
+                return;
+            }
+
+            fetch(`${API_BASE_URL}/api/memories/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('删除失败');
+                }
+                return response.json();
+            })
+            .then(() => {
+                // 更新本地数据并重新渲染
+                memories = memories.filter(m => m.id !== id);
+                renderMemoriesTable(memories);
+                document.getElementById('memories-count').textContent = memories.length;
+                showNotification('回忆已成功删除');
+            })
+            .catch(error => {
+                console.error('删除回忆失败:', error);
+                showNotification('删除失败: ' + error.message, true);
+            });
+        }
+
+        // 处理单张照片上传
+        function handleSinglePhotoUpload() {
+            const fileInput = document.getElementById('single-photo');
+            const caption = document.getElementById('single-caption').value;
+            const author = document.getElementById('single-author').value;
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showNotification('请选择要上传的照片', true);
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('photos', fileInput.files[0]);
+            formData.append('caption', caption);
+            formData.append('author', author);
+            
+            // 显示加载状态
+            const submitBtn = document.querySelector('#single-upload-form button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>上传中...';
+            
+            fetch(`${API_BASE_URL}/api/photos`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || '上传失败');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // 重置表单
+                document.getElementById('single-upload-form').reset();
+                // 重新加载照片列表
+                loadPhotos();
+                showNotification('照片上传成功');
+            })
+            .catch(error => {
+                console.error('照片上传失败:', error);
+                showNotification('上传失败: ' + error.message, true);
+            })
+            .finally(() => {
+                // 恢复按钮状态
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            });
+        }
+
+        // 处理批量照片上传
+        function handleBatchPhotoUpload() {
+            const fileInput = document.getElementById('batch-photos');
+            const description = document.getElementById('batch-description').value;
+            const author = document.getElementById('batch-author').value;
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showNotification('请选择要上传的照片', true);
+                return;
+            }
+            
+            const formData = new FormData();
+            // 添加所有文件
+            Array.from(fileInput.files).forEach(file => {
+                formData.append('photos[]', file);
+            });
+            formData.append('description', description);
+            formData.append('author', author);
+            
+            // 显示加载状态
+            const submitBtn = document.querySelector('#batch-upload-form button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>上传中...';
+            
+            fetch(`${API_BASE_URL}/api/photos/batch`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || '批量上传失败');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // 重置表单
+                document.getElementById('batch-upload-form').reset();
+                // 重新加载照片列表
+                loadPhotos();
+                showNotification(`成功上传 ${data.photos.length} 张照片`);
+            })
+            .catch(error => {
+                console.error('批量上传失败:', error);
+                showNotification('上传失败: ' + error.message, true);
+            })
+            .finally(() => {
+                // 恢复按钮状态
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            });
+        }
+
+        // 加载照片数据
+        function loadPhotos() {
+            fetch(`${API_BASE_URL}/api/photos`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data.success || !Array.isArray(data.photos)) {
+                        throw new Error('服务器返回照片数据格式错误');
+                    }
+                    photos = data.photos;
+                    renderPhotosGrid(photos);
+                    document.getElementById('photos-count').textContent = photos.length;
+                })
+                .catch(error => {
+                    console.error('加载照片失败:', error);
+                    document.getElementById('photos-grid').innerHTML = `
+                        <div class="col-span-full text-center text-red-500 py-10">
+                            加载照片失败: ${error.message}
+                        </div>
+                    `;
+                });
+        }
+
+        // 渲染照片网格
+        function renderPhotosGrid(data) {
+            const grid = document.getElementById('photos-grid');
+            
+            if (data.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center text-gray-500 py-10">
+                        暂无照片数据
+                    </div>
+                `;
+                return;
+            }
+
+            // 按日期倒序排列
+            const sortedData = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            grid.innerHTML = '';
+            sortedData.forEach(photo => {
+                const photoCard = document.createElement('div');
+                photoCard.className = 'relative group bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition transform hover:-translate-y-1';
+                
+                // 使用后端返回的thumbnailUrl
+                const thumbnailSrc = photo.thumbnailUrl || photo.url;
+                
+                photoCard.innerHTML = `
+                    <img src="${thumbnailSrc}" 
+                         alt="${photo.originalname || '照片'}" 
+                         class="w-full aspect-square object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                        <p class="text-white text-sm font-medium truncate">${photo.description || '无描述'}</p>
+                        <p class="text-white/80 text-xs">${formatDate(photo.date)}</p>
+                        <p class="text-white/80 text-xs mt-1">
+                            作者: ${photo.author === 'his' ? '他' : '她'}
+                        </p>
+                        <div class="mt-2 flex gap-1">
+                            <button class="btn-action text-xs ${photo.visible ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600'} text-white w-full"
+                                    onclick="togglePhotoVisibility('${photo.id}', ${!photo.visible})">
+                                ${photo.visible ? '隐藏' : '显示'}
+                            </button>
+                            <button class="btn-action text-xs bg-red-500 hover:bg-red-600 text-white w-full"
+                                    onclick="deletePhoto('${photo.id}')">
+                                删除
+                            </button>
+                        </div>
+                    </div>
+                    <span class="absolute top-1 right-1 px-1.5 py-0.5 rounded text-xs ${photo.visible ? 'bg-green-500/80 text-white' : 'bg-red-500/80 text-white'}">
+                        ${photo.visible ? '可见' : '隐藏'}
+                    </span>
+                `;
+                grid.appendChild(photoCard);
+            });
+        }
+
+        // 切换照片可见性
+        function togglePhotoVisibility(id, visible) {
+            fetch(`${API_BASE_URL}/api/photos/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ visible })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || '更新失败');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                const photo = photos.find(p => p.id === id);
+                if (photo) {
+                    photo.visible = visible;
+                    renderPhotosGrid(photos);
+                }
+                showNotification(data.message || `照片已${visible ? '显示' : '隐藏'}`);
+            })
+            .catch(error => {
+                console.error('更新照片失败:', error);
+                showNotification('操作失败: ' + error.message, true);
+            });
+        }
+
+        // 删除照片
+        function deletePhoto(id) {
+            if (!confirm('确定要删除这张照片吗？此操作不可恢复！')) {
+                return;
+            }
+
+            fetch(`${API_BASE_URL}/api/photos/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || '删除失败');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                photos = photos.filter(p => p.id !== id);
+                renderPhotosGrid(photos);
+                document.getElementById('photos-count').textContent = photos.length;
+                showNotification(data.message || '照片已成功删除');
+            })
+            .catch(error => {
+                console.error('删除照片失败:', error);
+                showNotification('删除失败: ' + error.message, true);
+            });
+        }
+
+        // 加载悄悄话数据
+        function loadMessages() {
+            fetch(`${API_BASE_URL}/api/messages`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('加载悄悄话失败');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    messages = data;
+                    renderMessagesList(messages);
+                    document.getElementById('messages-count').textContent = messages.length;
+                })
+                .catch(error => {
+                    console.error('加载悄悄话失败:', error);
+                    document.getElementById('messages-list').innerHTML = `
+                        <div class="text-center text-red-500 py-10">
+                            加载悄悄话失败: ${error.message}
+                        </div>
+                    `;
+                });
+        }
+
+        // 渲染悄悄话列表
+        function renderMessagesList(data) {
+            const list = document.getElementById('messages-list');
+            
+            if (data.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center text-gray-500 py-10">
+                        暂无悄悄话数据
+                    </div>
+                `;
+                return;
+            }
+
+            // 按日期倒序排列
+            const sortedData = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            list.innerHTML = '';
+            sortedData.forEach(message => {
+                const messageCard = document.createElement('div');
+                messageCard.className = 'bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition border-l-4 ' + 
+                                      (message.author === 'his' ? 'border-blue-500' : 'border-pink-500');
+                
+                messageCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="px-2 py-0.5 rounded text-xs ${message.author === 'his' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}">
+                            ${message.author === 'his' ? '他' : '她'}
+                        </span>
+                        <span class="text-xs text-gray-500">${formatDate(message.date)}</span>
+                    </div>
+                    
+                    <div class="mb-3 text-gray-800">
+                        ${message.content}
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs px-2 py-0.5 rounded-full ${message.visible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${message.visible ? '可见' : '隐藏'}
+                        </span>
+                        
+                        <div class="flex gap-2">
+                            <button class="btn-action ${message.visible ? 'bg-yellow-500 hover:bg-yellow-600' : 'btn-primary'} text-white text-xs"
+                                    onclick="toggleMessageVisibility(${message.id}, ${!message.visible})">
+                                ${message.visible ? '隐藏' : '显示'}
+                            </button>
+                            <button class="btn-action btn-danger text-xs"
+                                    onclick="deleteMessage(${message.id})">
+                                删除
+                            </button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(messageCard);
+            });
+        }
+
+        // 切换悄悄话可见性
+        function toggleMessageVisibility(id, visible) {
+            fetch(`${API_BASE_URL}/api/messages/${id}/visibility`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ visible })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('更新失败');
+                }
+                return response.json();
+            })
+            .then(() => {
+                const message = messages.find(m => m.id === id);
+                if (message) {
+                    message.visible = visible;
+                    renderMessagesList(messages);
+                    showNotification(`悄悄话已${visible ? '显示' : '隐藏'}`);
+                }
+            })
+            .catch(error => {
+                console.error('更新悄悄话失败:', error);
+                showNotification('操作失败: ' + error.message, true);
+            });
+        }
+
+        // 删除悄悄话
+        function deleteMessage(id) {
+            if (!confirm('确定要删除这条悄悄话吗？此操作不可恢复！')) {
+                return;
+            }
+
+            fetch(`${API_BASE_URL}/api/messages/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('删除失败');
+                }
+                return response.json();
+            })
+            .then(() => {
+                messages = messages.filter(m => m.id !== id);
+                renderMessagesList(messages);
+                document.getElementById('messages-count').textContent = messages.length;
+                showNotification('悄悄话已成功删除');
+            })
+            .catch(error => {
+                console.error('删除悄悄话失败:', error);
+                showNotification('删除失败: ' + error.message, true);
+            });
+        }
+
+        // 格式化日期
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // 暴露函数到全局
+        window.toggleMemoryVisibility = toggleMemoryVisibility;
+        window.deleteMemory = deleteMemory;
+        window.togglePhotoVisibility = togglePhotoVisibility;
+        window.deletePhoto = deletePhoto;
+        window.toggleMessageVisibility = toggleMessageVisibility;
+        window.deleteMessage = deleteMessage;
+    </script>
+</body>
+</html>
+    
