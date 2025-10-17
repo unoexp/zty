@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💕</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="index.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        his: {
+                            primary: '#4F9EFD',
+                            light: '#E8F0FF',
+                            dark: '#2C5282'
+                        },
+                        her: {
+                            primary: '#FF75A0',
+                            light: '#FFEFF3',
+                            dark: '#A64AC9'
+                        }
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                        dancing: ['"Dancing Script"', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .blur-text {
+                color: transparent;
+                text-shadow: 0 0 8px rgba(0,0,0,0.5);
+                transition: all 0.3s ease;
+            }
+            .blur-text-reveal {
+                color: inherit;
+                text-shadow: none;
+            }
+            .mask-gradient {
+                mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+                -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+            }
+            .photo-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+            .modal-backdrop {
+                backdrop-filter: blur(5px);
+            }
+            .fade-in {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="font-inter text-gray-800 min-h-screen"></body>
+<!-- 导航栏 -->
+    <nav class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-40 transition-all duration-300 shadow-sm">
+        <div id="user-indicator" class="fixed top-0 left-0 right-0 z-50 py-2 px-4 text-center font-medium text-white relative overflow-hidden">
+        <div class="absolute inset-0 bg-black/30 backdrop-blur-md z-[-1]"></div>
+        <p id="user-text">加载中...</p>
+	</div>
+        <div class="container mx-auto px-4 py-3 flex justify-center items-center">
+            <ul class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm md:text-base">
+                <li><a href="index.html" class="hover:text-primary transition-colors py-2">返回</a></li>
+            </ul>
+        </div>
+    </nav>
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 pt-24 pb-16">
+    </main>
+</body>
+</html>
