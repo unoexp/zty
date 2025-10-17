@@ -5,7 +5,13 @@ let photos = [];
 let messages = [];
 let currentPhotoIndex = 0;
 let currentPage = 1;
+let memoriesCurrentPage = 1;
+let messagesCurrentPage = 1;
+let totalMessagesPages = 1;
+let totalMemoriesPages = 1;
 const photosPerPage = 4; // 每页显示4张照片
+const memoriesPageSize = 5; // 每页显示5条回忆
+const messagesPageSize = 5; // 每页显示5条悄悄话
 const maxVisibleComments = 3; // 最多显示3条评论，超过则折叠
 const API_BASE_URL = 'http://106.15.93.94:3000'; // 服务器API基础URL
 
@@ -29,7 +35,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 加载数据
     loadAllData();
 });
-
 // 初始化用户界面
 function initUserInterface() {
     const userText = document.getElementById('user-text');
@@ -59,6 +64,7 @@ function initEventListeners() {
     // 回忆表单相关
     document.getElementById('add-memory-btn').addEventListener('click', () => {
         document.getElementById('memory-form-container').classList.remove('hidden');
+        setNowTime();
     });
     
     document.getElementById('cancel-memory').addEventListener('click', () => {
@@ -71,6 +77,56 @@ function initEventListeners() {
         addNewMemory();
     });
     
+    // 回忆分页事件
+    document.getElementById('memories-prev-page').addEventListener('click', () => {
+        if (memoriesCurrentPage > 1) {
+            memoriesCurrentPage--;
+            renderMemories();
+            const targetElement = document.querySelector("#memories");
+            window.scrollTo({
+                top: targetElement.offsetTop - 80,
+                behavior: 'smooth'
+            });
+        }
+    });
+    
+    document.getElementById('memories-next-page').addEventListener('click', () => {
+        if (memoriesCurrentPage < totalMemoriesPages) {
+            memoriesCurrentPage++;
+            renderMemories();
+            const targetElement = document.querySelector("#memories");
+            window.scrollTo({
+                top: targetElement.offsetTop - 80,
+                behavior: 'smooth'
+            });
+        }
+    });
+    
+    // 悄悄话分页事件
+    document.getElementById('messages-prev-page').addEventListener('click', () => {
+        if (messagesCurrentPage > 1) {
+            messagesCurrentPage--;
+            renderMessages();
+            const targetElement = document.querySelector("#messages");
+            window.scrollTo({
+                top: targetElement.offsetTop - 80,
+                behavior: 'smooth'
+            });
+        }
+    });
+    
+    document.getElementById('messages-next-page').addEventListener('click', () => {
+        if (messagesCurrentPage < totalMessagesPages) {
+            messagesCurrentPage++;
+            renderMessages();
+            const targetElement = document.querySelector("#messages");
+            window.scrollTo({
+                top: targetElement.offsetTop - 80,
+                behavior: 'smooth'
+            });
+        }
+    });
+
     // 照片上传相关
     document.getElementById('photo-upload').addEventListener('change', handlePhotoSelection);
     document.getElementById('cancel-upload').addEventListener('click', cancelPhotoUpload);
@@ -81,6 +137,11 @@ function initEventListeners() {
         if (currentPage > 1) {
             currentPage--;
             renderPhotos();
+            const targetElement = document.querySelector("#photos");
+            window.scrollTo({
+                top: targetElement.offsetTop - 80,
+                behavior: 'smooth'
+            });
         }
     });
     
@@ -88,6 +149,11 @@ function initEventListeners() {
         if (currentPage < getTotalPages()) {
             currentPage++;
             renderPhotos();
+            const targetElement = document.querySelector("#photos");
+            window.scrollTo({
+                top: targetElement.offsetTop - 80,
+                behavior: 'smooth'
+            });
         }
     });
     
@@ -153,6 +219,7 @@ function loadMemories() {
             memories.forEach(memory => {
                 memory.comments.sort((a, b) => new Date(a.date) - new Date(b.date));
             });
+            memoriesCurrentPage = 1; // 重置为第一页
             renderMemories();
         })
         .catch(error => {
@@ -190,10 +257,6 @@ function loadPhotos() {
     //     });
 }
 function initPhotoModule() {
-    // 初始化事件监听
-    initPhotoEventListeners();
-    
-    // 优先从服务器加载照片
     loadPhotosFromServer();
 }
 // 加载消息
@@ -208,6 +271,7 @@ function loadMessages() {
         .then(data => {
             // 只显示可见的消息
             messages = data.filter(message => message.visible !== false);
+            messagesCurrentPage = 1; // 重置为第一页
             renderMessages();
         })
         .catch(error => {
@@ -220,7 +284,7 @@ function loadMessages() {
         });
 }
 
-// 渲染回忆列表
+// 渲染回忆列表（带分页）
 function renderMemories() {
     const memoriesList = document.getElementById('memories-list');
     memoriesList.innerHTML = '';
@@ -231,15 +295,33 @@ function renderMemories() {
                 暂无回忆，点击"添加回忆"开始记录你们的故事吧
             </div>
         `;
+        document.getElementById('memories-pagination').classList.add('hidden');
         return;
     }
     
     // 按日期倒序排列
-    const sortedMemories = [...memories].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const sortedMemories = [...memories].sort((a, b) => new Date(b.date) - new Date(a.date));
     
-    sortedMemories.forEach(memory => {
+    // 计算总页数
+    totalMemoriesPages = Math.ceil(sortedMemories.length / memoriesPageSize);
+    
+    // 计算当前页数据的起始和结束索引
+    const startIndex = (memoriesCurrentPage - 1) * memoriesPageSize;
+    const endIndex = startIndex + memoriesPageSize;
+    const currentPageMemories = sortedMemories.slice(startIndex, endIndex);
+    const currentPageMemoriesRe = currentPageMemories.reverse();
+    // 渲染当前页的回忆
+    currentPageMemoriesRe.forEach(memory => {
         addMemoryToDOM(memory);
     });
+    
+    // 更新分页控件
+    updatePaginationControls(
+        'memories', 
+        memoriesCurrentPage, 
+        totalMemoriesPages, 
+        sortedMemories.length
+    );
 }
 
 // 添加回忆到DOM
@@ -319,7 +401,9 @@ function addMemoryToDOM(memory) {
     const commentInputHtml = `
         <div class="mt-4">
             <form class="add-memory-comment flex gap-2" data-memory-id="${memory.id}">
-                <input type="text" placeholder="添加评论..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition text-sm">
+                <textarea placeholder="添加评论..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition text-sm"
+                rows="2"
+                style="resize: vertical; overflow-y: auto;"></textarea>
                 <button type="submit" class="bg-primary text-white px-3 py-2 rounded-lg hover:bg-primary/90 transition text-sm">发送</button>
             </form>
         </div>
@@ -355,7 +439,7 @@ function addMemoryToDOM(memory) {
     // 添加评论提交事件
     memoryElement.querySelector('.add-memory-comment').addEventListener('submit', function(e) {
         e.preventDefault();
-        const input = this.querySelector('input');
+        const input = this.querySelector('textarea');
         const content = input.value.trim();
         
         if (content) {
@@ -751,38 +835,6 @@ function loadPhotosFromLocalStorage() {
         photos = JSON.parse(saved);
     }
 }
-// 初始化相册事件监听
-function initPhotoEventListeners() {
-    // 照片上传相关
-    document.getElementById('photo-upload').addEventListener('change', handlePhotoSelection);
-    document.getElementById('cancel-upload').addEventListener('click', cancelPhotoUpload);
-    document.getElementById('confirm-upload').addEventListener('click', uploadPhotos);
-    
-    // 相册分页相关
-    document.getElementById('prev-page').addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
-            renderPhotos();
-        }
-    });
-    
-    document.getElementById('next-page').addEventListener('click', () => {
-        if (currentPage < getTotalPages()) {
-            currentPage++;
-            renderPhotos();
-        }
-    });
-    
-    // 图片查看器相关
-    // document.getElementById('photo-viewer-backdrop').addEventListener('click', closePhotoViewer);
-    // document.getElementById('close-viewer').addEventListener('click', closePhotoViewer);
-    // document.getElementById('prev-photo').addEventListener('click', showPrevPhoto);
-    // document.getElementById('next-photo').addEventListener('click', showNextPhoto);
-    // document.getElementById('add-comment-form').addEventListener('submit', (e) => {
-    //     e.preventDefault();
-    //     addPhotoComment();
-    // });
-}
 // 生成缩略图
 function generateThumbnail(file) {
     return new Promise((resolve) => {
@@ -934,7 +986,55 @@ function addPhotoToGrid(photo) {
     
     photosGrid.appendChild(photoItem);
 }
-
+// 更新分页控件状态
+function updatePaginationControls(type, currentPage, totalPages, totalItems) {
+    const paginationContainer = document.getElementById(`${type}-pagination`);
+    const prevBtn = document.getElementById(`${type}-prev-page`);
+    const nextBtn = document.getElementById(`${type}-next-page`);
+    const pageIndicators = document.getElementById(`${type}-page-indicators`);
+    
+    // 只有当数据超过一页时才显示分页控件
+    if (totalItems <= (type === 'memories' ? memoriesPageSize : messagesPageSize)) {
+        paginationContainer.classList.add('hidden');
+        return;
+    }
+    
+    paginationContainer.classList.remove('hidden');
+    
+    // 更新上一页/下一页按钮状态
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === totalPages;
+    
+    // 生成页码指示器
+    pageIndicators.innerHTML = '';
+    for (let i = 1; i <= totalPages; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.className = `w-10 h-10 rounded-full flex items-center justify-center transition ${
+            i === currentPage ? 'bg-primary text-white' : 'border border-gray-300 hover:bg-gray-100'
+        }`;
+        pageBtn.textContent = i;
+        pageBtn.addEventListener('click', () => {
+            if (type === 'memories') {
+                memoriesCurrentPage = i;
+                renderMemories();
+                const targetElement = document.querySelector("#memories");
+                window.scrollTo({
+                    top: targetElement.offsetTop - 80,
+                    behavior: 'smooth'
+                });
+            } else {
+                messagesCurrentPage = i;
+                renderMessages();
+                const targetElement = document.querySelector("#messages");
+                window.scrollTo({
+                    top: targetElement.offsetTop - 80,
+                    behavior: 'smooth'
+                });
+            }
+        });
+        pageIndicators.appendChild(pageBtn);
+    }
+}
 // 打开图片查看器
 function openPhotoViewer(index) {
     if (!photos[index]) return;
@@ -1086,7 +1186,7 @@ function addPhotoComment() {
 
 // 渲染消息列表
 function renderMessages() {
-    const messagesList = document.getElementById('messages-list');
+   const messagesList = document.getElementById('messages-list');
     messagesList.innerHTML = '';
     
     if (messages.length === 0) {
@@ -1095,17 +1195,35 @@ function renderMessages() {
                 暂无悄悄话，点击"写悄悄话"开始给TA留言吧
             </div>
         `;
+        document.getElementById('messages-pagination').classList.add('hidden');
         return;
     }
     
     // 按日期倒序排列
-    const sortedMessages = [...messages].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const sortedMessages = [...messages].sort((a, b) => new Date(b.date) - new Date(a.date));
     
-    sortedMessages.forEach(message => {
+    // 计算总页数
+    totalMessagesPages = Math.ceil(sortedMessages.length / messagesPageSize);
+    
+    // 计算当前页数据的起始和结束索引
+    const startIndex = (messagesCurrentPage - 1) * messagesPageSize;
+    const endIndex = startIndex + messagesPageSize;
+    const currentPageMessages = sortedMessages.slice(startIndex, endIndex);
+    const currentPageMessagesRe = currentPageMessages.reverse();
+    // 渲染当前页的悄悄话（这里假设你有类似addMessageToDOM的函数）
+    currentPageMessagesRe.forEach(message => {
         addMessageToDOM(message);
     });
+    
+    // 更新分页控件
+    updatePaginationControls(
+        'messages', 
+        messagesCurrentPage, 
+        totalMessagesPages, 
+        sortedMessages.length
+    );
 }
-// 添加在你的JavaScript代码中的合适位置
+
 function formatRelativeTime(dateString) {
     if (!dateString) return '';
     
@@ -1218,8 +1336,29 @@ function addMessageToDOM(message) {
         messageElement.classList.add('transition-all', 'duration-500');
     }, 10);
 }
+function setNowTime(){
+    const dateInput = document.getElementById('memory-date');
     
-    // 格式化日期
+    if (dateInput) {
+        // 获取当前时间
+        const now = new Date();
+        
+        // 格式化时间为datetime-local所需的格式 (YYYY-MM-DDThh:mm)
+        // 月份和日期需要补零
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        
+        // 拼接成格式字符串
+        const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+        
+        // 设置输入框的值
+        dateInput.value = formattedDateTime;
+    }
+}
+// 格式化日期
 function formatDate(dateString) {
 if (!dateString) return '';
 const date = new Date(dateString);
