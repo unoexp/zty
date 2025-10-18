@@ -1,1 +1,4 @@
 .DS_Store
+uploads/
+data/
+node_modules/

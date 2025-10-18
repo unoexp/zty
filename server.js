@@ -1,4 +1,5 @@
 const express = require('express');
+const router = express.Router();
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const fs = require('fs');
@@ -13,10 +14,11 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 // 确保数据目录和上传目录存在
 const DATA_DIR = path.join(__dirname, 'data');
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const UPLOADS_DIR = path.join(__dirname, 'uploads', 'moods');
 const THUMBNAILS_DIR = path.join(UPLOADS_DIR, 'thumbnails');
 
 [DATA_DIR, UPLOADS_DIR, THUMBNAILS_DIR].forEach(dir => {
@@ -43,6 +45,7 @@ initDataFile('photos.json', []);
 initDataFile('messages.json', []);
 initDataFile('admin.json', { password: '232323' }); // 默认管理员密码
 initDataFile('comments.json', []);
+initDataFile('daily-moods.json', []);
 // initDataFile('memoryComments.json', {});
 
 // 数据操作函数（统一使用这组，避免重复）
@@ -665,6 +668,171 @@ app.get('/api/photos/:photoId/comments', (req, res) => {
         });
     }
 });
+
+
+// 保存每日心情数据
+app.post('/api/daily-moods', (req, res) => {
+    const { date, hisMood, herMood, updatedAt } = req.body;
+    
+    if (!date) {
+        return res.status(400).json({ error: '日期不能为空' });
+    }
+    
+    const moods = readData('daily-moods.json');
+    const existingIndex = moods.findIndex(item => item.date === date);
+    
+    const moodData = {
+        date,
+        hisMood: hisMood || '',
+        herMood: herMood || '',
+        hisImage: '',
+        herImage: '',
+        updatedAt: updatedAt || new Date().toISOString()
+    };
+    
+    if (existingIndex >= 0) {
+        // 更新现有记录
+        // 保留图片信息
+        moodData.hisImage = moods[existingIndex].hisImage || '';
+        moodData.herImage = moods[existingIndex].herImage || '';
+        moods[existingIndex] = moodData;
+    } else {
+        // 添加新记录
+        moods.push(moodData);
+    }
+    
+    if (writeData('daily-moods.json', moods)) {
+        res.json({ success: true, data: moodData });
+    } else {
+        res.status(500).json({ error: '保存心情数据失败' });
+    }
+});
+
+// 上传心情图片
+app.post('/api/daily-moods/image', upload, (req, res) => {
+    const { date, user } = req.body;
+    const imageUrl = `/uploads/moods/${req.file.filename}`;
+    
+    if (!date || !user || !['his', 'her'].includes(user)) {
+        return res.status(400).json({ error: '参数错误' });
+    }
+    
+    const moods = readData('daily-moods.json');
+    const existingIndex = moods.findIndex(item => item.date === date);
+    
+    if (existingIndex >= 0) {
+        // 更新现有记录的图片
+        moods[existingIndex][`${user}Image`] = imageUrl;
+        moods[existingIndex].updatedAt = new Date().toISOString();
+        
+        if (writeData('daily-moods.json', moods)) {
+            return res.json({ 
+                success: true, 
+                data: { 
+                    date, 
+                    imageUrl 
+                } 
+            });
+        }
+    } else {
+        // 创建新记录
+        const moodData = {
+            date,
+            hisMood: '',
+            herMood: '',
+            hisImage: user === 'his' ? imageUrl : '',
+            herImage: user === 'her' ? imageUrl : '',
+            updatedAt: new Date().toISOString()
+        };
+        
+        moods.push(moodData);
+        
+        if (writeData('daily-moods.json', moods)) {
+            return res.json({ 
+                success: true, 
+                data: { 
+                    date, 
+                    imageUrl 
+                } 
+            });
+        }
+    }
+    
+    res.status(500).json({ error: '上传图片失败' });
+});
+
+// 获取指定日期的心情数据
+app.get('/api/daily-moods-query', (req, res) => {
+    const { date } = req.params;
+    const moods = readData('daily-moods.json');
+    const moodData = moods.find(item => item.date === date) || {
+        date,
+        hisMood: '',
+        herMood: '',
+        hisImage: '',
+        herImage: ''
+    };
+    
+    res.json(moodData);
+});
+
+// 按日期查询回忆
+app.get('/api/memories-query', (req, res) => {
+    const { date } = req.query;
+    const memories = readData('memories.json');
+    if (date) {
+        const targetDate = new Date(date);
+        const filtered = memories.filter(memory => {
+        const memoryDate = new Date(memory.date);
+        // 比较年月日是否相同
+        return memoryDate.getFullYear() === targetDate.getFullYear() &&
+                memoryDate.getMonth() === targetDate.getMonth() &&
+                memoryDate.getDate() === targetDate.getDate();
+        });
+        return res.json(filtered);
+    }
+    
+    res.json(memories);
+});
+
+// 按日期查询照片
+app.get('/api/photos-query', (req, res) => {
+    const { date } = req.query;
+    const photos = readData('photos.json');
+    if (date) {
+        const targetDate = new Date(date);
+        const filtered = photos.filter(memory => {
+            const memoryDate = new Date(memory.date);
+            return memoryDate.getFullYear() === targetDate.getFullYear() &&
+                    memoryDate.getMonth() === targetDate.getMonth() &&
+                    memoryDate.getDate() === targetDate.getDate();
+            });
+        return res.json(filtered);
+    }
+    
+    res.json(photos);
+});
+
+// 按日期查询悄悄话
+app.get('/api/messages-query', (req, res) => {
+    const { date } = req.query;
+    const messages = readData('messages.json');
+    
+    if (date) {
+        const targetDate = new Date(date);
+        const filtered = messages.filter(memory => {
+            const memoryDate = new Date(memory.date);
+            return memoryDate.getFullYear() === targetDate.getFullYear() &&
+                    memoryDate.getMonth() === targetDate.getMonth() &&
+                    memoryDate.getDate() === targetDate.getDate();
+            });
+        return res.json(filtered);
+    }
+    
+    res.json(messages);
+});
+
+module.exports = router;
 
 // 消息路由
 app.get('/api/messages', (req, res) => {

@@ -13,7 +13,8 @@ const photosPerPage = 4; // 每页显示4张照片
 const memoriesPageSize = 5; // 每页显示5条回忆
 const messagesPageSize = 5; // 每页显示5条悄悄话
 const maxVisibleComments = 3; // 最多显示3条评论，超过则折叠
-const API_BASE_URL = 'http://106.15.93.94:3000'; // 服务器API基础URL
+// const API_BASE_URL = 'http://106.15.93.94:3000'; // 服务器API基础URL
+const API_BASE_URL = ''; // 服务器API基础URL
 
 // DOM加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -488,6 +489,7 @@ function addMemoryComment(memoryId, content) {
         body: JSON.stringify(comment)
     }).catch(error => {
         console.error('添加评论失败:', error);
+        showNotification('添加评论失败:', true);
     });
     
     // 重新渲染该回忆
@@ -496,6 +498,7 @@ function addMemoryComment(memoryId, content) {
         memoryElement.remove();
     }
     addMemoryToDOM(memory);
+    showNotification("评论成功！");
 }
 
 // 添加新回忆
@@ -535,6 +538,7 @@ function addNewMemory() {
     })
     .then(response => {
         if (!response.ok) {
+            showNotification("保存回忆失败", true);
             throw new Error('保存回忆失败');
         }
         return response.json();
@@ -549,6 +553,7 @@ function addNewMemory() {
         // 重置表单
         document.getElementById('memory-form').reset();
         document.getElementById('memory-form-container').classList.add('hidden');
+        showNotification("保存回忆成功！");
     })
     .catch(error => {
         console.error('添加回忆失败:', error);
@@ -741,11 +746,11 @@ async function uploadPhotos() {
         cancelPhotoUpload();
         
         // 显示成功提示
-        showNotification(`成功上传 ${newPhotos.length} 张照片`, 'success');
+        showNotification(`成功上传 ${newPhotos.length} 张照片`);
     })
     .catch(error => {
         console.error('照片上传失败:', error);
-        showNotification(`上传失败: ${error.message}`, 'error');
+        showNotification(`上传失败: ${error.message}`, true);
     })
     .finally(() => {
         // 恢复按钮状态
@@ -812,7 +817,7 @@ function loadPhotosFromServer() {
         if (savedPhotos) {
             photos = JSON.parse(savedPhotos);
             renderPhotos();
-            showNotification(`加载失败，显示本地备份 (${error.message})`, 'warning');
+            showNotification(`加载失败，显示本地备份 (${error.message})`, true);
         } else {
             photosGrid.innerHTML = `
                 <div class="col-span-full text-center text-red-500 py-16">
@@ -1172,10 +1177,11 @@ function addPhotoComment() {
         
         // 清空输入
         commentInput.value = '';
+        showNotification("评论成功！");
     })
     .catch(error => {
         console.error('添加评论失败:', error);
-        showNotification(`评论失败: ${error.message}`, 'error');
+        showNotification(`评论失败: ${error.message}`, true);
     })
     .finally(() => {
         // 恢复按钮状态
@@ -1284,6 +1290,7 @@ function addNewMessage() {
     })
     .then(response => {
         if (!response.ok) {
+            showNotification("发送消息失败", true);
             throw new Error('发送消息失败');
         }
         return response.json();
@@ -1298,6 +1305,7 @@ function addNewMessage() {
         // 重置表单
         document.getElementById('message-form').reset();
         document.getElementById('message-form-container').classList.add('hidden');
+        showNotification("发送成功！");
     })
     .catch(error => {
         console.error('添加消息失败:', error);
@@ -1360,14 +1368,46 @@ function setNowTime(){
 }
 // 格式化日期
 function formatDate(dateString) {
-if (!dateString) return '';
-const date = new Date(dateString);
-return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    // second: '2-digit'
-});
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        // second: '2-digit'
+    });
+}
+// 显示通知提示
+function showNotification(message, isError = false) {
+    // 获取通知元素，若不存在则创建
+    let notification = document.getElementById('notification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'notification';
+        notification.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center max-w-sm z-50';
+        document.body.appendChild(notification);
     }
+
+    // 设置通知内容和样式
+    notification.innerHTML = `
+        <i class="fa ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'} mr-2"></i>
+        <span>${message}</span>
+    `;
+    notification.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 flex items-center max-w-sm z-50 ${
+        isError ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+    }`;
+
+    // 显示通知
+    setTimeout(() => {
+        notification.classList.remove('translate-y-20', 'opacity-0');
+        notification.classList.add('translate-y-0', 'opacity-100');
+    }, 10);
+
+    // 3秒后自动隐藏
+    setTimeout(() => {
+        notification.classList.remove('translate-y-0', 'opacity-100');
+        notification.classList.add('translate-y-20', 'opacity-0');
+    }, 3000);
+}

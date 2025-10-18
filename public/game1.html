@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>爱情匹配度测试</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            love: '#E91E63',
+            trick: '#FFC107'
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .bounce-slow {
+        animation: bounce 3s infinite;
+      }
+      .shake {
+        animation: shake 0.5s;
+      }
+      .fade-in {
+        animation: fadeIn 1s ease-in;
+      }
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-10px); }
+      40% { transform: translateX(10px); }
+      60% { transform: translateX(-10px); }
+      80% { transform: translateX(10px); }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-pink-50 to-white min-h-screen flex flex-col items-center p-4 font-sans">
+  
+  <!-- 标题区域 -->
+  <div class="text-center mt-8 mb-10">
+    <h1 class="text-[clamp(1.8rem,5vw,2.5rem)] font-bold text-love mb-2">
+      <i class="fa fa-heart mr-2"></i>爱情匹配度测试
+    </h1>
+    <p class="text-gray-600">据说99%的情侣都不敢测...</p>
+  </div>
+  
+  <!-- 测试表单 (初始显示) -->
+  <div id="test-form" class="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 fade-in">
+    <div class="mb-6">
+      <label class="block text-gray-700 mb-2" for="her-name">女生名字</label>
+      <input type="text" id="her-name" 
+        class="w-full px-4 py-3 border border-pink-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-love/50"
+        placeholder="比如：小可爱"
+      >
+    </div>
+    
+    <div class="mb-8">
+      <label class="block text-gray-700 mb-2" for="my-name">男生名字</label>
+      <input type="text" id="my-name" 
+        class="w-full px-4 py-3 border border-pink-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-love/50"
+        placeholder="比如：大聪明"
+        value="">
+    </div>
+    
+    <button id="test-btn" class="w-full bg-love hover:bg-love/90 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]">
+      开始测试 <i class="fa fa-arrow-right ml-1"></i>
+    </button>
+  </div>
+  
+  <!-- 加载动画 (隐藏) -->
+  <div id="loading" class="hidden text-center">
+    <div class="text-5xl text-love mb-4">
+      <i class="fa fa-spinner fa-spin"></i>
+    </div>
+    <p class="text-gray-600">正在计算你们的缘分...</p>
+    <p class="text-gray-500 text-sm mt-2">据说越真心，结果越准哦~</p>
+  </div>
+  
+  <!-- 整蛊结果 (隐藏) -->
+  <div id="trick-result" class="hidden w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
+    <div class="text-center mb-6">
+      <div class="inline-block p-4 bg-red-100 rounded-full mb-4">
+        <i class="fa fa-meh-o text-4xl text-red-500"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-red-500 mb-2">匹配度计算完成</h2>
+      <p class="text-gray-600">根据宇宙爱情法则分析...</p>
+    </div>
+    
+    <div class="text-center my-8">
+      <div class="text-5xl font-bold text-red-500 shake" id="low-percent">1%</div>
+      <p class="text-gray-500 mt-2">这...好像不太理想</p>
+    </div>
+    
+    <div class="bg-red-50 p-4 rounded-lg text-red-700 text-center text-sm">
+      系统提示：可能需要再多亲亲抱抱才能提升哦~
+    </div>
+  </div>
+  
+  <!-- 甜蜜反转 (隐藏) -->
+  <div id="sweet-result" class="hidden w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
+    <div class="text-center">
+      <div class="inline-block p-4 bg-love/10 rounded-full mb-4">
+        <i class="fa fa-heart text-5xl text-love bounce-slow"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-love mb-3">逗你的啦傻瓜！</h2>
+      
+      <div class="my-6">
+        <img src="https://picsum.photos/500/300?random=2" alt="甜蜜合照" class="w-full h-48 object-cover rounded-lg mb-4">
+        <p class="text-gray-700 leading-relaxed">
+          其实你们的匹配度是 <span class="text-love font-bold">100%</span> 呀！<br>
+          不管测试结果是什么，我都超级超级爱你~<br>
+        </p>
+      </div>
+      
+      <button id="again-btn" class="mt-4 bg-love hover:bg-love/90 text-white font-bold py-2 px-6 rounded-full transition-all">
+        <i class="fa fa-refresh mr-1"></i> 再玩一次
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 获取元素
+    const testForm = document.getElementById('test-form');
+    const loading = document.getElementById('loading');
+    const trickResult = document.getElementById('trick-result');
+    const sweetResult = document.getElementById('sweet-result');
+    const testBtn = document.getElementById('test-btn');
+    const againBtn = document.getElementById('again-btn');
+    const herNameInput = document.getElementById('her-name');
+    const lowPercent = document.getElementById('low-percent');
+    
+    // 点击测试按钮
+    testBtn.addEventListener('click', () => {
+      const herName = herNameInput.value.trim();
+      if (!herName) {
+        // 抖动输入框提示
+        herNameInput.classList.add('shake');
+        setTimeout(() => herNameInput.classList.remove('shake'), 500);
+        return;
+      }
+      
+      // 显示加载动画
+      testForm.classList.add('hidden');
+      loading.classList.remove('hidden');
+      
+      // 2秒后显示整蛊结果
+      setTimeout(() => {
+        loading.classList.add('hidden');
+        trickResult.classList.remove('hidden');
+        
+        // 数字跳动动画（从100降到1）
+        let num = 100;
+        const timer = setInterval(() => {
+          num -= Math.floor(Math.random() * 5) + 1;
+          lowPercent.textContent = `${num}%`;
+          if (num <= 1) {
+            clearInterval(timer);
+            lowPercent.textContent = '1%';
+            
+            // 再等2秒显示反转结果
+            setTimeout(() => {
+              trickResult.classList.add('hidden');
+              sweetResult.classList.remove('hidden');
+              // 播放甜蜜音效
+              playSound('sweet');
+            }, 2000);
+          }
+        }, 50);
+        
+        // 播放失望音效
+        playSound('trick');
+      }, 2000);
+    });
+    
+    // 再玩一次
+    againBtn.addEventListener('click', () => {
+      sweetResult.classList.add('hidden');
+      testForm.classList.remove('hidden');
+      herNameInput.focus();
+    });
+    
+    // 音效函数
+    function playSound(type) {
+      const audio = new Audio();
+      if (type === 'trick') {
+        audio.src = 'https://assets.mixkit.co/sfx/preview/mixkit-sad-trombone-fail-notification-2959.mp3';
+      } else {
+        audio.src = 'https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3';
+      }
+      audio.volume = 0.6;
+      audio.play().catch(e => console.log('需要用户交互才能播放音效'));
+    }
+  </script>
+</body>
+</html>
