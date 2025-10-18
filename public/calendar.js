@@ -285,7 +285,8 @@ function initEventListeners() {
     
     // 图片上传预览
     // document.getElementById('image-upload').addEventListener('change', handleImageUpload);
-
+    document.getElementById('photo-viewer-backdrop').addEventListener('click', closePhotoViewer);
+    document.getElementById('close-viewer').addEventListener('click', closePhotoViewer);
     // 新增：发布心情按钮点击事件
     document.getElementById('publish-mood-btn').addEventListener('click', openMoodModal);
     
@@ -296,6 +297,13 @@ function initEventListeners() {
     document.getElementById('mood-image-upload').addEventListener('change', handleMoodImageUpload);
 }
 
+
+// 关闭图片查看器
+function closePhotoViewer() {
+    document.getElementById('photo-viewer').classList.add('hidden');
+    document.getElementById('photo-viewer').classList.remove('fade-in');
+    document.body.style.overflow = '';
+}
 
 // 打开心情编辑模态框
 function openMoodModal() {
@@ -1068,14 +1076,6 @@ function addMemoryToDOM(memory) {
     
     // 评论输入框
     const commentInputHtml = `
-        <div class="mt-4">
-            <form class="add-memory-comment flex gap-2" data-memory-id="${memory.id}">
-                <textarea placeholder="添加评论..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition text-sm"
-                rows="2"
-                style="resize: vertical; overflow-y: auto;"></textarea>
-                <button type="submit" class="bg-primary text-white px-3 py-2 rounded-lg hover:bg-primary/90 transition text-sm">发送</button>
-            </form>
-        </div>
     `;
     
     // 创建回忆元素
@@ -1106,16 +1106,16 @@ function addMemoryToDOM(memory) {
     }, 10);
     
     // 添加评论提交事件
-    memoryElement.querySelector('.add-memory-comment').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const input = this.querySelector('textarea');
-        const content = input.value.trim();
+    // memoryElement.querySelector('.add-memory-comment').addEventListener('submit', function(e) {
+    //     e.preventDefault();
+    //     const input = this.querySelector('textarea');
+    //     const content = input.value.trim();
         
-        if (content) {
-            addMemoryComment(memory.id, content);
-            input.value = '';
-        }
-    });
+    //     if (content) {
+    //         addMemoryComment(memory.id, content);
+    //         input.value = '';
+    //     }
+    // });
     
     // 添加评论折叠/展开事件
     memoryElement.querySelectorAll('.toggle-comments').forEach(button => {
