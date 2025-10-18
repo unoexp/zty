@@ -453,6 +453,7 @@ function renderDatePhotos(filteredPhotos) {
 // 按日期渲染回忆
 function renderDateMemories(filteredMemories) {
     const memoriesList = document.getElementById('date-memories-list');
+    memoriesList.innerHTML = '';
     if (filteredMemories.length === 0) {
         memoriesList.innerHTML = `
             <div class="bg-white rounded-xl shadow-md p-6 text-center text-gray-500">
@@ -473,6 +474,7 @@ function renderDateMemories(filteredMemories) {
 // 按日期渲染消息
 function renderDateMessages(filteredMessages) {
     const memoriesList = document.getElementById('date-messages-list');
+    memoriesList.innerHTML = '';
     if (filteredMessages.length === 0) {
         memoriesList.innerHTML = `
             <div class="bg-white rounded-xl shadow-md p-6 text-center text-gray-500">
