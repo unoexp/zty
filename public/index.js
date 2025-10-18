@@ -77,7 +77,14 @@ function initEventListeners() {
         e.preventDefault();
         addNewMemory();
     });
-    
+    document.getElementById('calendar-link').addEventListener('click', function() {
+        // 获取当前页面的URL参数（如 ?user=her）
+        const currentParams = window.location.search;
+        // 拼接参数到新链接（如果有参数则携带，没有则不加）
+        const targetUrl = `calendar.html${currentParams}`;
+        // 跳转到带参数的链接
+        window.location.href = targetUrl;
+    });
     // 回忆分页事件
     document.getElementById('memories-prev-page').addEventListener('click', () => {
         if (memoriesCurrentPage > 1) {

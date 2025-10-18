@@ -267,7 +267,14 @@ function initEventListeners() {
         curDay = formatDateDay(currentDate);
         renderCalendar();
     });
-    
+    document.getElementById('main-link').addEventListener('click', function() {
+        // 获取当前页面的URL参数（如 ?user=her）
+        const currentParams = window.location.search;
+        // 拼接参数到新链接（如果有参数则携带，没有则不加）
+        const targetUrl = `index.html${currentParams}`;
+        // 跳转到带参数的链接
+        window.location.href = targetUrl;
+    });
     // 模态框控制
     document.getElementById('close-modal').addEventListener('click', closeModal);
     document.getElementById('modal-backdrop').addEventListener('click', closeModal);
