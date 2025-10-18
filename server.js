@@ -668,102 +668,119 @@ app.get('/api/photos/:photoId/comments', (req, res) => {
         });
     }
 });
-
-
 // 保存每日心情数据
 app.post('/api/daily-moods', (req, res) => {
-    const { date, hisMood, herMood, updatedAt } = req.body;
-    
-    if (!date) {
-        return res.status(400).json({ error: '日期不能为空' });
-    }
-    
-    const moods = readData('daily-moods.json');
-    const existingIndex = moods.findIndex(item => item.date === date);
-    
-    const moodData = {
-        date,
-        hisMood: hisMood || '',
-        herMood: herMood || '',
-        hisImage: '',
-        herImage: '',
-        updatedAt: updatedAt || new Date().toISOString()
-    };
-    
-    if (existingIndex >= 0) {
-        // 更新现有记录
-        // 保留图片信息
-        moodData.hisImage = moods[existingIndex].hisImage || '';
-        moodData.herImage = moods[existingIndex].herImage || '';
-        moods[existingIndex] = moodData;
-    } else {
-        // 添加新记录
-        moods.push(moodData);
-    }
-    
-    if (writeData('daily-moods.json', moods)) {
-        res.json({ success: true, data: moodData });
-    } else {
-        res.status(500).json({ error: '保存心情数据失败' });
+    try {
+        const { date, his, her } = req.body;
+        if (!date) {
+            return res.status(400).json({ error: '日期不能为空' });
+        }
+
+        // 读取现有心情数据
+        let moods = readData('daily-moods.json');
+        // 查找对应日期的记录
+        const moodIndex = moods.findIndex(item => item.date === date);
+
+        if (moodIndex !== -1) {
+            // 更新现有记录
+            if (his !== undefined) moods[moodIndex].his = his;
+            if (her !== undefined) moods[moodIndex].her = her;
+            moods[moodIndex].updatedAt = new Date().toISOString();
+        } else {
+            // 创建新记录
+            moods.push({
+                date,
+                his: his || {},
+                her: her || {},
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+        }
+
+        // 保存到文件
+        const saveSuccess = writeData('daily-moods.json', moods);
+        if (saveSuccess) {
+            res.status(200).json(moods.find(item => item.date === date));
+        } else {
+            res.status(500).json({ error: '保存心情失败' });
+        }
+    } catch (error) {
+        console.error('保存心情失败:', error);
+        res.status(500).json({ error: '保存心情失败' });
     }
 });
 
-// 上传心情图片
-app.post('/api/daily-moods/image', upload, (req, res) => {
-    const { date, user } = req.body;
-    const imageUrl = `/uploads/moods/${req.file.filename}`;
-    
-    if (!date || !user || !['his', 'her'].includes(user)) {
-        return res.status(400).json({ error: '参数错误' });
-    }
-    
-    const moods = readData('daily-moods.json');
-    const existingIndex = moods.findIndex(item => item.date === date);
-    
-    if (existingIndex >= 0) {
-        // 更新现有记录的图片
-        moods[existingIndex][`${user}Image`] = imageUrl;
-        moods[existingIndex].updatedAt = new Date().toISOString();
-        
-        if (writeData('daily-moods.json', moods)) {
-            return res.json({ 
-                success: true, 
-                data: { 
-                    date, 
-                    imageUrl 
-                } 
-            });
+// 上传每日心情相关图片
+app.post('/api/daily-moods/image', upload, async (req, res) => {
+    try {
+        const { date, user } = req.body;
+        if (!date || !user || !['his', 'her'].includes(user)) {
+            return res.status(400).json({ error: '日期和用户类型（his/her）不能为空' });
         }
-    } else {
-        // 创建新记录
-        const moodData = {
-            date,
-            hisMood: '',
-            herMood: '',
-            hisImage: user === 'his' ? imageUrl : '',
-            herImage: user === 'her' ? imageUrl : '',
-            updatedAt: new Date().toISOString()
-        };
-        
-        moods.push(moodData);
-        
-        if (writeData('daily-moods.json', moods)) {
-            return res.json({ 
-                success: true, 
-                data: { 
-                    date, 
-                    imageUrl 
-                } 
-            });
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: '请上传图片' });
         }
+
+        // 获取上传的图片信息
+        const file = req.files[0];
+        const imageUrl = `/uploads/${file.filename}`;
+        // 生成缩略图（可选，与照片模块保持一致）
+        const thumbnail = await generateThumbnail(file.filename);
+        const thumbnailUrl = thumbnail.startsWith('thumbnail-') 
+            ? `/uploads/thumbnails/${thumbnail}` 
+            : `/uploads/${thumbnail}`;
+
+        // 读取现有心情数据
+        let moods = readData('daily-moods.json');
+        const moodIndex = moods.findIndex(item => item.date === date);
+
+        if (moodIndex !== -1) {
+            // 更新现有记录的图片信息
+            moods[moodIndex][user] = {
+                ...moods[moodIndex][user], // 保留原有信息
+                imageUrl,
+                thumbnailUrl,
+                updatedAt: new Date().toISOString()
+            };
+            moods[moodIndex].updatedAt = new Date().toISOString();
+        } else {
+            // 创建新记录
+            const moodData = {
+                date,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            moodData[user] = {
+                imageUrl,
+                thumbnailUrl,
+                updatedAt: new Date().toISOString()
+            };
+            // 初始化另一方的数据（可选）
+            moodData[user === 'his' ? 'her' : 'his'] = {};
+            moods.push(moodData);
+        }
+
+        // 保存到文件
+        const saveSuccess = writeData('daily-moods.json', moods);
+        if (saveSuccess) {
+            res.status(200).json({ 
+                success: true, 
+                imageUrl,
+                thumbnailUrl,
+                record: moods.find(item => item.date === date)
+            });
+        } else {
+            res.status(500).json({ error: '上传图片失败' });
+        }
+    } catch (error) {
+        console.error('上传图片失败:', error);
+        res.status(500).json({ error: '上传图片失败' });
     }
-    
-    res.status(500).json({ error: '上传图片失败' });
 });
 
 // 获取指定日期的心情数据
 app.get('/api/daily-moods-query', (req, res) => {
-    const { date } = req.params;
+    const { date } = req.query;
     const moods = readData('daily-moods.json');
     const moodData = moods.find(item => item.date === date) || {
         date,
@@ -774,6 +791,22 @@ app.get('/api/daily-moods-query', (req, res) => {
     };
     
     res.json(moodData);
+});
+
+app.get('/api/daily-moods', (req, res) => {
+    try {
+        const calendarData = readData('daily-moods.json');
+        res.json({
+            success: true,
+            data: calendarData
+        });
+    } catch (error) {
+        console.error('获取日历数据失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '获取日历数据失败'
+        });
+    }
 });
 
 // 按日期查询回忆

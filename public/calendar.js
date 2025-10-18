@@ -15,8 +15,54 @@ const moods = {
 let memories = [];
 let photos = [];
 let messages = [];
+let curDay = formatDateDay(currentDate);
+
+const specialDates = [
+  {
+    month: 10,
+    day: 11,
+    name: "恋爱周年",
+    marker: "周年❤️", 
+    bgColor: "bg-pink-200", // 格子背景色（Tailwind类，避免深色影响文字）
+    borderColor: "border-pink-500" // 格子边框色
+  },
+  {
+    month: 7,
+    day: 27,
+    name: "他的生日",
+    marker: "生日🎂",
+    bgColor: "bg-blue-200",
+    borderColor: "border-blue-500"
+  },
+  {
+    month: 10,
+    day: 17,
+    name: "她的生日",
+    marker: "生日🎁",
+    bgColor: "bg-purple-200",
+    borderColor: "border-purple-500"
+  },
+  {
+    month: 9,
+    day: 8,
+    name: "木木生日",
+    marker: "木木🎂",
+    bgColor: "bg-[rgba(208,244,226,1)]",
+    borderColor: "border-[rgba(239,215,166,1)]"
+  },
+  {
+    month: 8,
+    day: 9,
+    name: "蛋挞生日",
+    marker: "蛋挞🎂",
+    bgColor: "bg-[rgba(173,232,255,1)]",
+    borderColor: "border-[rgba(255,167,44,1)]"
+  }
+  // 可继续添加更多特殊日期...
+];
+
 // DOM加载完成后初始化
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // 解析URL参数确定用户视角
     const params = new URLSearchParams(window.location.search);
     const user = params.get('user');
@@ -33,12 +79,10 @@ document.addEventListener('DOMContentLoaded', function() {
     initEventListeners();
     
     // 加载日历数据
-    loadCalendarData();
+    await loadCalendarData();
     
     // 渲染日历
     renderCalendar();
-
-    initCalendarSelection();
 });
 
 // 日历格子选择功能
@@ -52,46 +96,15 @@ function initCalendarSelection() {
             // 添加当前格子的选中状态
             this.classList.add('selected');
             
-            // 获取选中的日期（现在可以正确获取 data-date 属性了）
+            // 获取选中的日期
             const selectedDate = this.getAttribute('data-date');
             
             // 显示日期详情模块
             showDateDetails(selectedDate);
-            
+            curDay = selectedDate;
             // 同时更新隐藏表单中的选中日期
-            document.getElementById('selected-date').value = selectedDate;
+            // document.getElementById('selected-date').value = selectedDate;
         });
-    });
-    
-    // 初始化心情提交表单
-    initMoodForm();
-}
-
-// 初始化心情提交表单
-function initMoodForm() {
-    const moodForm = document.getElementById('mood-form');
-    moodForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const date = document.getElementById('selected-date').value;
-        const hisMood = document.getElementById('his-mood').value;
-        const herMood = document.getElementById('her-mood').value;
-        const hisImageInput = document.getElementById('his-image');
-        const herImageInput = document.getElementById('her-image');
-        
-        // 处理文字心情提交
-        saveMoods(date, hisMood, herMood);
-        
-        // 处理图片上传
-        if (hisImageInput.files.length > 0) {
-            uploadMoodImage(date, 'his', hisImageInput.files[0]);
-        }
-        if (herImageInput.files.length > 0) {
-            uploadMoodImage(date, 'her', herImageInput.files[0]);
-        }
-        
-        // 重置表单
-        moodForm.reset();
     });
 }
 
@@ -135,7 +148,7 @@ function uploadMoodImage(date, user, file) {
     formData.append('date', date);
     formData.append('user', user);
     
-    fetch(`${API_BASE_URL}/api/daily-moods/image`, {
+    return fetch(`${API_BASE_URL}/api/daily-moods/image`, {
         method: 'POST',
         body: formData
     })
@@ -201,7 +214,7 @@ function loadDateData(date) {
         });
     
     // 加载当天的悄悄话
-    fetch(`${API_BASE_URL}/api/messages?date=${date}`)
+    fetch(`${API_BASE_URL}/api/messages-query?date=${date}`)
         .then(response => response.json())
         .then(messages => {
             renderDateMessages(messages);
@@ -251,6 +264,7 @@ function initEventListeners() {
     
     document.getElementById('today-btn').addEventListener('click', () => {
         currentDate = new Date();
+        curDay = formatDateDay(currentDate);
         renderCalendar();
     });
     
@@ -267,11 +281,130 @@ function initEventListeners() {
     });
     
     // 保存记录
-    document.getElementById('save-entry').addEventListener('click', saveDiaryEntry);
+    // document.getElementById('save-entry').addEventListener('click', saveDiaryEntry);
     
     // 图片上传预览
-    document.getElementById('image-upload').addEventListener('change', handleImageUpload);
+    // document.getElementById('image-upload').addEventListener('change', handleImageUpload);
+
+    // 新增：发布心情按钮点击事件
+    document.getElementById('publish-mood-btn').addEventListener('click', openMoodModal);
+    
+    // 新增：保存心情按钮点击事件
+    document.getElementById('save-mood-btn').addEventListener('click', saveMoodEntry);
+    
+    // 新增：图片上传预览
+    document.getElementById('mood-image-upload').addEventListener('change', handleMoodImageUpload);
 }
+
+
+// 打开心情编辑模态框
+function openMoodModal() {
+    const today = formatDate(currentDate);
+    document.getElementById('modal-date').textContent = formatDateDay(today);
+    document.getElementById('day-modal').classList.remove('hidden');
+    // 清空之前的选择和输入
+    document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.remove('ring-2', 'ring-offset-2', 'ring-primary'));
+    document.getElementById('mood-note').value = '';
+    document.getElementById('mood-preview-images').innerHTML = '';
+    document.getElementById('mood-image-upload').value = '';
+}
+
+// 关闭模态框
+function closeModal() {
+    document.getElementById('day-modal').classList.add('hidden');
+}
+
+// 处理心情图片上传预览
+function handleMoodImageUpload(e) {
+    const files = e.target.files;
+    const previewContainer = document.getElementById('mood-preview-images');
+    previewContainer.innerHTML = '';
+    
+    if (files) {
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const preview = document.createElement('div');
+                preview.className = 'relative';
+                preview.innerHTML = `
+                    <img src="${event.target.result}" class="w-20 h-20 object-cover rounded-md" alt="预览图">
+                    <button type="button" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs remove-image">×</button>
+                `;
+                previewContainer.appendChild(preview);
+                
+                // 添加删除图片事件
+                preview.querySelector('.remove-image').addEventListener('click', function() {
+                    preview.remove();
+                    // 重置input值以允许重新选择相同文件
+                    document.getElementById('mood-image-upload').value = '';
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+}
+
+// 保存心情记录
+function saveMoodEntry() {
+    const today = curDay;
+    const selectedMood = document.querySelector('.mood-btn.ring-primary')?.getAttribute('data-mood');
+    const note = document.getElementById('mood-note').value.trim();
+    const imageInput = document.getElementById('mood-image-upload');
+    
+    if (!selectedMood) {
+        alert('请选择一个心情');
+        return;
+    }
+    
+    // 构建心情数据
+    const moodData = {
+        date: today,
+        [currentUser]: {
+            mood: selectedMood,
+            note: note,
+            updatedAt: new Date().toISOString()
+        }
+    };
+    
+    // 保存心情数据
+    fetch(`${API_BASE_URL}/api/daily-moods`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(moodData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('保存心情失败');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('心情保存成功', data);
+        
+        // 处理图片上传
+        if (imageInput.files.length > 0) {
+            uploadMoodImage(today, currentUser, imageInput.files[0])
+                .then(() => {
+                    closeModal();
+                    updateCalendarData(data);
+                    showDateDetails(today); // 刷新显示
+                    renderCalendar(); // 重新渲染日历
+                });
+        } else {
+            closeModal();
+            updateCalendarData(data);
+            showDateDetails(today); // 刷新显示
+            renderCalendar(); // 重新渲染日历
+        }
+    })
+    .catch(error => {
+        console.error('保存心情失败:', error);
+        alert('保存心情失败: ' + error.message);
+    });
+}
+
 // 按日期渲染照片
 function renderDatePhotos(filteredPhotos) {
     const photosGrid = document.getElementById('date-photos-grid');
@@ -318,16 +451,8 @@ function renderDatePhotos(filteredPhotos) {
 }
 
 // 按日期渲染回忆
-function renderDateMemories(date) {
-    const memoriesList = document.getElementById('memories-list');
-    memoriesList.innerHTML = '';
-    
-    // 筛选指定日期的回忆
-    const filteredMemories = memories.filter(memory => {
-        const memoryDate = new Date(memory.date);
-        return memoryDate.toDateString() === date.toDateString();
-    });
-    
+function renderDateMemories(filteredMemories) {
+    const memoriesList = document.getElementById('date-memories-list');
     if (filteredMemories.length === 0) {
         memoriesList.innerHTML = `
             <div class="bg-white rounded-xl shadow-md p-6 text-center text-gray-500">
@@ -346,18 +471,10 @@ function renderDateMemories(date) {
 }
 
 // 按日期渲染消息
-function renderDateMessages(date) {
-    const messagesList = document.getElementById('messages-list');
-    messagesList.innerHTML = '';
-    
-    // 筛选指定日期的消息
-    const filteredMessages = messages.filter(message => {
-        const messageDate = new Date(message.date);
-        return messageDate.toDateString() === date.toDateString();
-    });
-    
+function renderDateMessages(filteredMessages) {
+    const memoriesList = document.getElementById('date-messages-list');
     if (filteredMessages.length === 0) {
-        messagesList.innerHTML = `
+        memoriesList.innerHTML = `
             <div class="bg-white rounded-xl shadow-md p-6 text-center text-gray-500">
                 该日期暂无悄悄话
             </div>
@@ -400,17 +517,44 @@ function renderCalendar() {
     // 添加当月的日期
     for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayData = calendarData[dateStr] || {};
+        const dayData = calendarData.find(item => item.date === dateStr) || {};
         const dayCell = document.createElement('div');
-        dayCell.className = 'day-cell bg-white rounded-lg border border-gray-100 p-1 relative hover:shadow-md transition cursor-pointer';
+
+        // 1. 初始化格子基础样式
+        let cellClasses = "day-cell rounded-lg border border-gray-100 p-1 relative hover:shadow-md transition cursor-pointer";
+        // 2. 判断当前日期是否为特殊日期
+        const specialDate = specialDates.find(item => {
+            // 只对比 月份和日期（忽略年份，实现每年重复标记）
+            return item.month === (month + 1) && item.day === day;
+        });
+        // dayCell.className = 'day-cell rounded-lg border border-gray-100 p-1 relative hover:shadow-md transition cursor-pointer';
         dayCell.dataset.date = dateStr;
+        if (specialDate) {
+            cellClasses = `${cellClasses} ${specialDate.bgColor} ${specialDate.borderColor}`;
+        }
+        dayCell.className = cellClasses;
+        dayCell.dataset.date = dateStr;
+        // 特殊日期hover显示名称（可选优化）
+        if (specialDate) {
+            dayCell.title = specialDate.name; // 鼠标悬浮时显示“恋爱周年”等名称
+        }
+        // 4. 日期数字 + 特殊日期标记（右侧空白位置）
+        const dayNumberContainer = document.createElement('div');
+        dayNumberContainer.className = "flex justify-between items-start text-xs font-medium mb-1 day-number"; // 用flex让日期和标记左右分布
         
         // 日期数字
         const dayNumber = document.createElement('div');
-        dayNumber.className = 'text-xs font-medium mb-1';
         dayNumber.textContent = day;
-        dayCell.appendChild(dayNumber);
-        
+        dayNumberContainer.appendChild(dayNumber);
+
+        // 5. 特殊日期标记（添加到日期右侧）
+        if (specialDate) {
+            const marker = document.createElement('div');
+            marker.className = "ml-1 special-marker"; 
+            marker.innerHTML = specialDate.marker;
+            dayNumberContainer.appendChild(marker);
+        }
+        dayCell.appendChild(dayNumberContainer);
         // 创建心情显示区域
         const moodContainer = document.createElement('div');
         moodContainer.className = 'half-cell';
@@ -445,6 +589,15 @@ function renderCalendar() {
             todayCell.classList.add('ring-2', 'ring-primary');
         }
     }
+
+    initCalendarSelection();
+    setTimeout(() => {
+        const today = curDay;
+        const todayCell = document.querySelector(`.day-cell[data-date="${today}"]`);
+        if (todayCell) {
+            todayCell.click(); // 触发点击事件，选中今天
+        }
+    }, 100);
 }
 
 // 打开日期详情模态框
@@ -504,26 +657,62 @@ function openDayModal(dateStr) {
     document.body.style.overflow = 'hidden';
 }
 // 渲染心情记录列表
-function renderMoods() {
-    const moodsList = document.getElementById('moods-list');
-    moodsList.innerHTML = '';
+function renderMoods(moodData) {
+    // 清空之前的内容
+    document.getElementById('his-mood-content').textContent = '-';
+    document.getElementById('her-mood-content').textContent = '-';
+    document.getElementById('his-mood-image').src = '';
+    document.getElementById('her-mood-image').src = '';
+    document.getElementById('his-mood-image').classList.add('hidden');
+    document.getElementById('her-mood-image').classList.add('hidden');
     
-    // 检查是否有心情数据
-    if (moods.length === 0) {
-        moodsList.innerHTML = `
-            <div class="bg-white rounded-xl shadow-md p-6 text-center text-gray-500">
-                暂无心情记录，点击"记录心情"开始记录吧
-            </div>
-        `;
+    if (!moodData || Object.keys(moodData).length === 0) {
         return;
     }
+    // 渲染他的心情
+    if (moodData.his?.mood) {
+        const hisMood = moods[moodData.his.mood]; // 假设moods是心情配置表（含名称、图标等）
+        document.getElementById('his-mood-content').innerHTML = `
+            <div class="mood-header">
+                <div class="mood-icon w-6 h-6 rounded-full ${hisMood.color} flex items-center justify-center text-white mr-2">
+                    <i class="fa ${hisMood.icon} text-xs"></i>
+                </div>
+                <span class="mood-text font-medium">${hisMood.name}</span>
+            </div>
+            ${moodData.his.note ? `
+                <div class="mood-note mt-2 text-gray-600 text-sm">
+                    ${moodData.his.note}
+                </div>
+            ` : ''}
+        `;
+        // 显示图片（如果有）
+        if (moodData.his.imageUrl) {
+            document.getElementById('his-mood-image').src = moodData.his.imageUrl;
+            document.getElementById('his-mood-image').classList.remove('hidden');
+        }
+    }
     
-    // 按日期倒序排列（最新的在前）
-    const sortedMoods = [...moods].sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    sortedMoods.forEach(mood => {
-        addMoodToDOM(mood);
-    });
+    // 渲染她的心情（与上面逻辑一致）
+    if (moodData.her?.mood) {
+        const herMood = moods[moodData.her.mood];
+        document.getElementById('her-mood-content').innerHTML = `
+            <div class="mood-header">
+                <div class="mood-icon w-6 h-6 rounded-full ${herMood.color} flex items-center justify-center text-white mr-2">
+                    <i class="fa ${herMood.icon} text-xs"></i>
+                </div>
+                <span class="mood-text font-medium">${herMood.name}</span>
+            </div>
+            ${moodData.her.note ? `
+                <div class="mood-note mt-2 text-gray-600 text-sm">
+                    ${moodData.her.note}
+                </div>
+            ` : ''}
+        `;
+        if (moodData.her.imageUrl) {
+            document.getElementById('her-mood-image').src = moodData.her.imageUrl;
+            document.getElementById('her-mood-image').classList.remove('hidden');
+        }
+    }
 }
 
 // 添加心情记录到DOM
@@ -675,7 +864,7 @@ function openPhotoViewer(index) {
     document.getElementById('photo-caption').textContent = photo.description || '无描述';
     document.getElementById('photo-desc-text').textContent = photo.description || '暂无描述';
     document.getElementById('photo-author-date').textContent = 
-        `${photo.author === 'his' ? '他' : '她'} · ${formatDate(photo.date)}`;
+        `${photo.author === 'his' ? '他' : '她'} · ${formatDateDay(photo.date)}`;
     
     // 加载评论
     loadPhotoComments(photo.id);
@@ -685,12 +874,67 @@ function openPhotoViewer(index) {
     viewer.classList.add('fade-in');
     document.body.style.overflow = 'hidden';
 }
+function updateCalendarData(newData) {
+    const targetIndex = calendarData.findIndex(item => item.date === newData.date);
+    const targetItem = calendarData.find(item => item.date === newData.date);
+    if (targetIndex !== -1) {
+        calendarData[targetIndex] = newData;
+        calendarData[targetIndex] = {
+            ...calendarData[targetIndex], // 保留旧数据
+            ...newData, // 用新数据覆盖相同字段
+        };
+    }else {
+        calendarData.push(newData);
+        calendarData.sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
+}
+
+// 加载照片评论
+function loadPhotoComments(photoId) {
+    const commentsContainer = document.getElementById('photo-comments');
+    const photo = photos.find(p => p.id === photoId);
+    
+    if (!photo || !photo.comments) {
+        commentsContainer.innerHTML = '<p class="text-sm text-gray-500">暂无评论</p>';
+        return;
+    }
+    
+    commentsContainer.innerHTML = '';
+    
+    photo.comments.forEach(comment => {
+        const commentElement = document.createElement('div');
+        commentElement.className = 'flex gap-2';
+        commentElement.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                <i class="fa fa-user"></i>
+            </div>
+            <div class="flex-1">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm font-medium">${comment.author === 'his' ? '他' : '她'}</span>
+                    <span class="text-xs text-gray-500">${formatRelativeTime(comment.date)}</span>
+                </div>
+                <p class="text-sm">${comment.content}</p>
+            </div>
+        `;
+        commentsContainer.appendChild(commentElement);
+    });
+}
 // 加载日历数据
-function loadCalendarData() {
-    // 从本地存储加载（实际应用中应该从服务器加载）
-    const savedData = localStorage.getItem('calendarData');
-    if (savedData) {
-        calendarData = JSON.parse(savedData);
+async function loadCalendarData() {
+    try {
+        const response = await fetch('/api/daily-moods');
+        const result = await response.json();
+        
+        if (result.success) {
+            calendarData = result.data; // 赋值给日历数据变量
+            renderCalendar();    
+        } else {
+            console.error('加载日历数据失败:', result.message);
+            calendarData = []; // 失败时使用默认空数组
+        }
+    } catch (error) {
+        console.error('请求日历数据出错:', error);
+        calendarData = []; // 异常时使用默认空数组
     }
 }
 // 格式化日期
@@ -708,10 +952,210 @@ function formatDate(dateString) {
 }
 function formatDateDay(dateString) {
     if (!dateString) return '';
+    
     const date = new Date(dateString);
-    return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+    if (isNaN(date.getTime())) return '';
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`; 
+}
+function formatRelativeTime(dateString) {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    // 定义时间单位和对应的秒数
+    const timeUnits = [
+        { unit: '年', seconds: 31536000 },
+        { unit: '月', seconds: 2592000 },
+        { unit: '天', seconds: 86400 },
+        { unit: '小时', seconds: 3600 },
+        { unit: '分钟', seconds: 60 },
+        { unit: '秒', seconds: 1 }
+    ];
+    
+    // 计算最合适的时间单位
+    for (const { unit, seconds } of timeUnits) {
+        const value = Math.floor(diffInSeconds / seconds);
+        if (value >= 1) {
+            return `${value}${unit}前`;
+        }
+    }
+    
+    return '刚刚';
+}
+
+
+// 添加回忆到DOM
+function addMemoryToDOM(memory) {
+    const memoriesList = document.getElementById('date-memories-list');
+    // 创建评论HTML
+    let commentsHtml = '';
+    let commentsContainerClass = 'memory-comments mt-4 space-y-3';
+    const maxVisibleComments = 3; // 最多显示3条评论，超过则折叠
+    
+    // 确定是否需要折叠评论
+    const hasMoreComments = memory.comments && memory.comments.length > maxVisibleComments;
+    const visibleComments = hasMoreComments 
+        ? memory.comments.slice(0, maxVisibleComments) // 只显示最后3条
+        : memory.comments;
+    
+    if (visibleComments && visibleComments.length > 0) {
+        visibleComments.forEach(comment => {
+            const date = new Date(comment.date);
+            const formattedDate = date.toLocaleString('zh-CN');
+            
+            commentsHtml += `
+                <div class="flex gap-2 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-8 h-8 rounded-full ${comment.author === 'his' ? 'bg-his-primary' : 'bg-her-primary'} flex items-center justify-center text-white text-xs flex-shrink-0">
+                        ${comment.author === 'his' ? '他' : '她'}
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-medium ${comment.author === 'his' ? 'text-his-dark' : 'text-her-dark'}">${comment.author === 'his' ? '他' : '她'}</span>
+                            <span class="text-xs text-gray-400">${formattedDate}</span>
+                        </div>
+                        <p class="text-sm text-gray-700">${comment.content}</p>
+                    </div>
+                </div>
+            `;
+        });
+        
+        // 添加折叠/展开按钮
+        if (hasMoreComments) {
+            const hiddenCount = memory.comments.length - maxVisibleComments;
+            commentsHtml += `
+                <div class="more-comments-btn space-y-3">
+                    <button class="toggle-comments w-full text-center text-sm text-primary hover:text-primary/80 transition">
+                        显示全部 ${memory.comments.length} 条评论
+                    </button>
+                </div>
+                <div class="hidden more-comments space-y-3">
+                    ${memory.comments.slice(maxVisibleComments, memory.comments.length).map(comment => {
+                        const date = new Date(comment.date);
+                        const formattedDate = date.toLocaleString('zh-CN');
+                        return `
+                            <div class="flex gap-2 p-3 bg-gray-50 rounded-lg">
+                                <div class="w-8 h-8 rounded-full ${comment.author === 'his' ? 'bg-his-primary' : 'bg-her-primary'} flex items-center justify-center text-white text-xs flex-shrink-0">
+                                    ${comment.author === 'his' ? '他' : '她'}
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-xs font-medium ${comment.author === 'his' ? 'text-his-dark' : 'text-her-dark'}">${comment.author === 'his' ? '他' : '她'}</span>
+                                        <span class="text-xs text-gray-400">${formattedDate}</span>
+                                    </div>
+                                    <p class="text-sm text-gray-700">${comment.content}</p>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                    <button class="toggle-comments w-full text-center text-sm text-primary hover:text-primary/80 transition">
+                        收起评论
+                    </button>
+                </div>
+            `;
+        }
+    } else {
+        commentsHtml = '<p class="text-gray-500 text-sm italic text-center py-2">暂无评论，来发表第一条评论吧~</p>';
+    }
+    
+    // 评论输入框
+    const commentInputHtml = `
+        <div class="mt-4">
+            <form class="add-memory-comment flex gap-2" data-memory-id="${memory.id}">
+                <textarea placeholder="添加评论..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition text-sm"
+                rows="2"
+                style="resize: vertical; overflow-y: auto;"></textarea>
+                <button type="submit" class="bg-primary text-white px-3 py-2 rounded-lg hover:bg-primary/90 transition text-sm">发送</button>
+            </form>
+        </div>
+    `;
+    
+    // 创建回忆元素
+    const memoryElement = document.createElement('div');
+    memoryElement.className = 'bg-white rounded-xl shadow-md p-6 transform hover:shadow-lg transition opacity-0 translate-y-4';
+    memoryElement.setAttribute('data-memory-id', memory.id);
+    memoryElement.innerHTML = `
+        <div class="flex justify-between items-start mb-3">
+            <h3 class="text-xl font-semibold text-gray-800">${memory.title}</h3>
+            <span class="text-sm px-2 py-1 rounded-full ${memory.author === 'his' ? 'bg-his-light text-his-dark' : 'bg-her-light text-her-dark'}">${memory.author === 'his' ? '他的回忆' : '她的回忆'}</span>
+        </div>
+        <p class="text-gray-600 text-sm mb-3">${formatDate(memory.date)}</p>
+        <p class="text-gray-700 mb-4">${memory.content}</p>
+        
+        <div class="${commentsContainerClass}">
+            ${commentsHtml}
+        </div>
+        
+        ${commentInputHtml}
+    `;
+    
+    memoriesList.prepend(memoryElement);
+    
+    // 添加动画效果
+    setTimeout(() => {
+        memoryElement.classList.remove('opacity-0', 'translate-y-4');
+        memoryElement.classList.add('transition-all', 'duration-500');
+    }, 10);
+    
+    // 添加评论提交事件
+    memoryElement.querySelector('.add-memory-comment').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const input = this.querySelector('textarea');
+        const content = input.value.trim();
+        
+        if (content) {
+            addMemoryComment(memory.id, content);
+            input.value = '';
+        }
     });
+    
+    // 添加评论折叠/展开事件
+    memoryElement.querySelectorAll('.toggle-comments').forEach(button => {
+        button.addEventListener('click', function() {
+            const moreComments = this.parentElement.parentElement.querySelector('.more-comments') || this.nextElementSibling;
+            moreComments.classList.toggle('hidden');
+            const moreCommentsBtn = this.parentElement.parentElement.querySelector('.more-comments-btn') || this.nextElementSibling;
+            moreCommentsBtn.classList.toggle('hidden');
+        });
+    });
+}
+
+
+
+// 添加消息到DOM
+function addMessageToDOM(message) {
+    const messagesList = document.getElementById('date-messages-list');
+    
+    const messageElement = document.createElement('div');
+    messageElement.className = 'bg-white rounded-xl shadow-md p-6 transform hover:shadow-lg transition opacity-0 translate-y-4';
+    messageElement.innerHTML = `
+        <div class="flex justify-between items-start mb-3">
+            <span class="text-sm px-2 py-1 rounded-full ${message.author === 'his' ? 'bg-his-light text-his-dark' : 'bg-her-light text-her-dark'}">${message.author === 'his' ? '他的消息' : '她的消息'}</span>
+            <span class="text-xs text-gray-500">${formatDate(message.date)}</span>
+        </div>
+        <div class="message-content ${message.shouldBlur ? 'blur-text cursor-pointer' : ''} transition-all duration-300">
+            ${message.content}
+        </div>
+    `;
+    
+    messagesList.prepend(messageElement);
+    
+    // 添加点击显示效果
+    if (message.shouldBlur) {
+        messageElement.querySelector('.message-content').addEventListener('click', function() {
+            this.classList.toggle('blur-text-reveal');
+        });
+    }
+    
+    // 添加动画效果
+    setTimeout(() => {
+        messageElement.classList.remove('opacity-0', 'translate-y-4');
+        messageElement.classList.add('transition-all', 'duration-500');
+    }, 10);
 }

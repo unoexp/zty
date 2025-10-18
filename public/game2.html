@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>你的心动盲盒</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            sweet: '#FF7E9F',
+            soft: '#FFF2F6'
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .glow {
+        animation: glow 2s ease-in-out infinite alternate;
+      }
+      .pop {
+        animation: pop 0.5s ease-in-out;
+      }
+      .fade-up {
+        animation: fadeUp 0.8s ease-out;
+      }
+    }
+    
+    @keyframes glow {
+      from { box-shadow: 0 0 10px rgba(255, 126, 159, 0.4); }
+      to { box-shadow: 0 0 20px rgba(255, 126, 159, 0.7); }
+    }
+    
+    @keyframes pop {
+      0% { transform: scale(0.9); opacity: 0; }
+      70% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes fadeUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-soft to-white min-h-screen flex flex-col items-center p-4 font-sans">
+  
+  <!-- 标题区 -->
+  <div class="text-center mt-8 mb-10 fade-up">
+    <h1 class="text-[clamp(1.6rem,5vw,2.3rem)] font-bold text-sweet mb-3">
+      <i class="fa fa-gift mr-2"></i>给你的心动盲盒
+    </h1>
+    <p class="text-gray-600 max-w-xs mx-auto">
+      每个盒子里都藏着我想对你说的话～ 点击拆开看看吧
+    </p>
+  </div>
+  
+  <!-- 盲盒容器 -->
+  <div id="box-container" class="w-full max-w-md grid grid-cols-2 gap-6 mb-10">
+    <!-- 盲盒1 -->
+    <div class="box bg-white rounded-2xl shadow-lg p-6 aspect-square flex flex-col items-center justify-center cursor-pointer transition-all hover:scale-105 glow" data-id="1">
+      <div class="text-sweet text-5xl mb-4">
+        <i class="fa fa-heart"></i>
+      </div>
+      <p class="text-gray-700 font-medium">盲盒①</p>
+    </div>
+    
+    <!-- 盲盒2 -->
+    <div class="box bg-white rounded-2xl shadow-lg p-6 aspect-square flex flex-col items-center justify-center cursor-pointer transition-all hover:scale-105 glow" data-id="2">
+      <div class="text-sweet text-5xl mb-4">
+        <i class="fa fa-road"></i>
+      </div>
+      <p class="text-gray-700 font-medium">盲盒②</p>
+    </div>
+    
+    <!-- 盲盒3 -->
+    <div class="box bg-white rounded-2xl shadow-lg p-6 aspect-square flex flex-col items-center justify-center cursor-pointer transition-all hover:scale-105 glow" data-id="3">
+      <div class="text-sweet text-5xl mb-4">
+        <i class="fa fa-calendar"></i>
+      </div>
+      <p class="text-gray-700 font-medium">盲盒③</p>
+    </div>
+    
+    <!-- 盲盒4 -->
+    <div class="box bg-white rounded-2xl shadow-lg p-6 aspect-square flex flex-col items-center justify-center cursor-pointer transition-all hover:scale-105 glow" data-id="4">
+      <div class="text-sweet text-5xl mb-4">
+        <i class="fa fa-book"></i>
+      </div>
+      <p class="text-gray-700 font-medium">盲盒④</p>
+    </div>
+  </div>
+  
+  <!-- 盲盒内容弹窗 (隐藏) -->
+  <div id="box-content" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative pop">
+      <!-- 关闭按钮 -->
+      <button id="close-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">
+        <i class="fa fa-times"></i>
+      </button>
+      
+      <!-- 内容区 -->
+      <div id="content-inner" class="text-center">
+        <!-- 内容会通过JS动态插入 -->
+      </div>
+    </div>
+  </div>
+  
+  <!-- 最终浪漫弹窗 (隐藏) -->
+  <div id="final-popup" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 text-center pop">
+      <div class="text-sweet text-6xl mb-6">
+        <i class="fa fa-heart"></i>
+      </div>
+      <h2 class="text-[clamp(1.5rem,4vw,2rem)] font-bold text-sweet mb-4">
+        其实还有个终极盲盒呀
+      </h2>
+      <p class="text-gray-700 text-lg mb-8 leading-relaxed">
+        拆完所有盲盒才发现吧～<br>
+        每句碎碎念里，都藏着我偷偷攒的喜欢呀～<br>
+        比起这些小惊喜，我最想告诉你的是——<br>
+        往后的日子，想和你拆完一辈子的盲盒 ❤️
+      </p>
+      
+      <button id="reset-all" class="bg-sweet hover:bg-sweet/90 text-white font-bold py-3 px-8 rounded-full transition-all">
+        再拆一次
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 盲盒内容数据（替换成你们的真实回忆更浪漫！）
+    const boxData = {
+      1: {
+        icon: 'fa-heart',
+        title: '余生的约定',
+        content: '从和你在一起的那天起，就悄悄在心里种下一个约定 —— 要牵着你的手，从春樱看到冬雪，从青丝走到白头，把每个平凡日子都过成诗～',
+        color: 'text-pink-500'
+      },
+      2: {
+        icon: 'fa-road',
+        title: '未完成的旅途',
+        content: '答应过带你去很多好玩的地方，吃很多好吃的东西 —— 这些约定我都记在心里呢，等我们慢慢实现，让每段路都刻着我们的名字～',
+        color: 'text-amber-500'
+      },
+      3: {
+        icon: 'fa-calendar',
+        title: '时光的承诺',
+        content: '我不敢说永远，但我能保证：今年的生日陪你吹蜡烛，明年的初雪陪你踩脚印，往后每一个重要的时刻，我的坐标永远是 "在你身边"～',
+        color: 'text-blue-500'
+      },
+      4: {
+        icon: 'fa-book',
+        title: '我们的故事',
+        content: '想和你一起写本厚厚的日记，记下每个平凡日子里藏着的小确幸。等老了坐在摇椅上翻，原来我们早就把日子过成了童话～',
+        color: 'text-purple-500'
+      }
+    };
+
+    // 获取元素
+    const boxes = document.querySelectorAll('.box');
+    const boxContainer = document.getElementById('box-container');
+    const boxContent = document.getElementById('box-content');
+    const contentInner = document.getElementById('content-inner');
+    const closeBtn = document.getElementById('close-btn');
+    const finalPopup = document.getElementById('final-popup');
+    const resetAll = document.getElementById('reset-all');
+    
+    // 已拆开的盲盒记录
+    let openedBoxes = new Set();
+
+    // 点击盲盒
+    boxes.forEach(box => {
+      box.addEventListener('click', () => {
+        const boxId = box.dataset.id;
+        openedBoxes.add(boxId);
+        
+        // 插入盲盒内容
+        const data = boxData[boxId];
+        contentInner.innerHTML = `
+          <div class="${data.color} text-5xl mb-4">
+            <i class="fa ${data.icon}"></i>
+          </div>
+          <h3 class="text-xl font-bold text-gray-800 mb-3">${data.title}</h3>
+          <p class="text-gray-600 mb-6 leading-relaxed">${data.content}</p>
+          <button id="continue-btn" class="bg-sweet hover:bg-sweet/90 text-white font-bold py-2 px-6 rounded-full transition-all">
+            继续拆盲盒
+          </button>
+        `;
+        
+        // 显示弹窗
+        boxContent.classList.remove('hidden');
+        playSound('open');
+        
+        // 继续拆盲盒按钮
+        document.getElementById('continue-btn').addEventListener('click', () => {
+          boxContent.classList.add('hidden');
+          // 标记已拆开的盲盒（变灰）
+          box.classList.add('opacity-50', 'pointer-events-none');
+          
+          // 所有盲盒拆完后显示最终弹窗
+          if (openedBoxes.size === 4) {
+            setTimeout(() => {
+              finalPopup.classList.remove('hidden');
+              playSound('final');
+            }, 800);
+          }
+        });
+      });
+    });
+
+    // 关闭弹窗
+    closeBtn.addEventListener('click', () => {
+      boxContent.classList.add('hidden');
+    });
+
+    // 重置所有盲盒
+    resetAll.addEventListener('click', () => {
+      finalPopup.classList.add('hidden');
+      openedBoxes.clear();
+      
+      // 恢复盲盒状态
+      boxes.forEach(box => {
+        box.classList.remove('opacity-50', 'pointer-events-none');
+      });
+    });
+
+    // 音效控制
+    function playSound(type) {
+    //   const audio = new Audio();
+    //   if (type === 'open') {
+    //     audio.src = 'https://assets.mixkit.co/sfx/preview/mixkit-soft-toy-whistler-sound-1846.mp3';
+    //     audio.volume = 0.6;
+    //   } else {
+    //     audio.src = 'https://assets.mixkit.co/sfx/preview/mixkit-love-arcade-game-216.mp3';
+    //     audio.volume = 0.7;
+    //   }
+    //   audio.play().catch(e => {});
+    }
+  </script>
+</body>
+</html>
