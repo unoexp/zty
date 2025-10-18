@@ -18,7 +18,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // 确保数据目录和上传目录存在
 const DATA_DIR = path.join(__dirname, 'data');
-const UPLOADS_DIR = path.join(__dirname, 'uploads', 'moods');
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
 const THUMBNAILS_DIR = path.join(UPLOADS_DIR, 'thumbnails');
 
 [DATA_DIR, UPLOADS_DIR, THUMBNAILS_DIR].forEach(dir => {
