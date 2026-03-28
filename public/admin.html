@@ -640,8 +640,8 @@
                     }
                     return response.json();
                 })
-                .then(data => {
-                    memories = data;
+                .then(result => {
+                    memories = result.data || result;
                     renderMemoriesTable(memories);
                     document.getElementById('memories-count').textContent = memories.length;
                 })
@@ -862,7 +862,7 @@
                 document.getElementById('batch-upload-form').reset();
                 // 重新加载照片列表
                 loadPhotos();
-                showNotification(`成功上传 ${data.photos.length} 张照片`);
+                showNotification(`成功上传 ${data.data.length} 张照片`);
             })
             .catch(error => {
                 console.error('批量上传失败:', error);
@@ -885,10 +885,10 @@
                     return response.json();
                 })
                 .then(data => {
-                    if (!data.success || !Array.isArray(data.photos)) {
+                    if (!data.success || !Array.isArray(data.data)) {
                         throw new Error('服务器返回照片数据格式错误');
                     }
-                    photos = data.photos;
+                    photos = data.data;
                     renderPhotosGrid(photos);
                     document.getElementById('photos-count').textContent = photos.length;
                 })
@@ -1024,8 +1024,8 @@
                     }
                     return response.json();
                 })
-                .then(data => {
-                    messages = data;
+                .then(result => {
+                    messages = result.data || result;
                     renderMessagesList(messages);
                     document.getElementById('messages-count').textContent = messages.length;
                 })

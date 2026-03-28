@@ -1,5 +1,4 @@
 const express = require('express');
-const router = express.Router();
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const fs = require('fs');
@@ -260,35 +259,46 @@ app.post('/api/admin/change-password', (req, res) => {
 // 回忆路由
 app.get('/api/memories', (req, res) => {
     const memories = readData('memories.json');
-    res.json(memories);
+    res.json({ success: true, data: memories });
 });
 
 app.post('/api/memories', (req, res) => {
     const memories = readData('memories.json');
+    const { title, date, content, author, visible } = req.body;
     const newMemory = {
         id: Date.now(),
-        ...req.body,
+        title: title || '',
+        date: date || new Date().toISOString(),
+        content: content || '',
+        author: author || 'his',
+        visible: visible !== false,
+        comments: [],
         createdAt: new Date().toISOString()
     };
     
     memories.push(newMemory);
     writeData('memories.json', memories);
-    
-    res.json(newMemory);
+
+    res.json({ success: true, data: newMemory });
 });
 
 app.put('/api/memories/:id', (req, res) => {
     const memories = readData('memories.json');
     const id = parseInt(req.params.id);
     const index = memories.findIndex(memory => memory.id === id);
-    
+
     if (index === -1) {
         return res.status(404).json({ success: false, message: '回忆不存在' });
     }
-    
-    memories[index] = { ...memories[index], ...req.body };
+
+    const { title, date, content, author, visible } = req.body;
+    if (title !== undefined) memories[index].title = title;
+    if (date !== undefined) memories[index].date = date;
+    if (content !== undefined) memories[index].content = content;
+    if (author !== undefined) memories[index].author = author;
+    if (visible !== undefined) memories[index].visible = visible;
     writeData('memories.json', memories);
-    
+
     res.json({ success: true, data: memories[index] });
 });
 
@@ -323,7 +333,7 @@ app.get('/api/photos', (req, res) => {
         const photos = readData('photos.json');
         res.json({
             success: true,
-            photos: photos
+            data: photos
         });
     } catch (error) {
         console.error('获取照片失败:', error);
@@ -367,8 +377,8 @@ app.post('/api/photos', upload, async (req, res) => {  // 添加async
         
         photos.push(newPhoto);
         writeData('photos.json', photos);
-        
-        res.json(newPhoto);
+
+        res.json({ success: true, data: newPhoto });
     } catch (error) {
         console.error('照片上传失败:', error);
         res.status(500).json({
@@ -433,7 +443,7 @@ app.post('/api/photos/batch', upload, async (req, res) => {  // 添加async
         res.json({
             success: true,
             message: `成功上传 ${newPhotos.length} 张照片`,
-            photos: newPhotos
+            data: newPhotos
         });
     } catch (error) {
         console.error('照片上传失败:', error);
@@ -455,7 +465,11 @@ app.put('/api/photos/:photoId', (req, res) => {
             return res.status(404).json({ success: false, message: '照片不存在' });
         }
         
-        photos[index] = { ...photos[index], ...req.body };
+        const { caption, description, author, visible } = req.body;
+        if (caption !== undefined) photos[index].caption = caption;
+        if (description !== undefined) photos[index].description = description;
+        if (author !== undefined) photos[index].author = author;
+        if (visible !== undefined) photos[index].visible = visible;
         const saved = writeData('photos.json', photos);
         
         if (!saved) {
@@ -865,19 +879,20 @@ app.get('/api/messages-query', (req, res) => {
     res.json(messages);
 });
 
-module.exports = router;
-
 // 消息路由
 app.get('/api/messages', (req, res) => {
     const messages = readData('messages.json');
-    res.json(messages);
+    res.json({ success: true, data: messages });
 });
 
 app.post('/api/messages', (req, res) => {
     const messages = readData('messages.json');
+    const { content, author, shouldBlur } = req.body;
     const newMessage = {
         id: Date.now(),
-        ...req.body,
+        content: content || '',
+        author: author || 'his',
+        shouldBlur: shouldBlur || false,
         date: new Date().toISOString(),
         visible: true,
         createdAt: new Date().toISOString()
@@ -885,22 +900,26 @@ app.post('/api/messages', (req, res) => {
     
     messages.push(newMessage);
     writeData('messages.json', messages);
-    
-    res.json(newMessage);
+
+    res.json({ success: true, data: newMessage });
 });
 
 app.put('/api/messages/:id', (req, res) => {
     const messages = readData('messages.json');
     const id = parseInt(req.params.id);
     const index = messages.findIndex(message => message.id === id);
-    
+
     if (index === -1) {
         return res.status(404).json({ success: false, message: '消息不存在' });
     }
-    
-    messages[index] = { ...messages[index], ...req.body };
+
+    const { content, author, shouldBlur, visible } = req.body;
+    if (content !== undefined) messages[index].content = content;
+    if (author !== undefined) messages[index].author = author;
+    if (shouldBlur !== undefined) messages[index].shouldBlur = shouldBlur;
+    if (visible !== undefined) messages[index].visible = visible;
     writeData('messages.json', messages);
-    
+
     res.json({ success: true, data: messages[index] });
 });
 

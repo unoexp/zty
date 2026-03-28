@@ -9,12 +9,19 @@ let memoriesCurrentPage = 1;
 let messagesCurrentPage = 1;
 let totalMessagesPages = 1;
 let totalMemoriesPages = 1;
-const photosPerPage = 4; // 每页显示4张照片
-const memoriesPageSize = 5; // 每页显示5条回忆
-const messagesPageSize = 5; // 每页显示5条悄悄话
-const maxVisibleComments = 3; // 最多显示3条评论，超过则折叠
-// const API_BASE_URL = 'http://106.15.93.94:3000'; // 服务器API基础URL
-const API_BASE_URL = ''; // 服务器API基础URL
+const photosPerPage = 8;
+const memoriesPageSize = 5;
+const messagesPageSize = 5;
+const maxVisibleComments = 3;
+const API_BASE_URL = '';
+
+// XSS 防护：转义 HTML 特殊字符
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
 
 // DOM加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -216,25 +223,27 @@ function loadAllData() {
 function loadMemories() {
     fetch(`${API_BASE_URL}/api/memories`)
         .then(response => {
-            if (!response.ok) {
-                throw new Error('加载回忆失败');
-            }
+            if (!response.ok) throw new Error('加载回忆失败');
             return response.json();
         })
-        .then(data => {
-            // 只显示可见的回忆
-            memories = data.filter(memory => memory.visible !== false);
+        .then(result => {
+            const data = result.data || result;
+            memories = (Array.isArray(data) ? data : []).filter(memory => memory.visible !== false);
             memories.forEach(memory => {
-                memory.comments.sort((a, b) => new Date(a.date) - new Date(b.date));
+                if (memory.comments) {
+                    memory.comments.sort((a, b) => new Date(a.date) - new Date(b.date));
+                } else {
+                    memory.comments = [];
+                }
             });
-            memoriesCurrentPage = 1; // 重置为第一页
+            memoriesCurrentPage = 1;
             renderMemories();
         })
         .catch(error => {
             console.error('加载回忆失败:', error);
             document.getElementById('memories-list').innerHTML = `
                 <div class="bg-white rounded-xl shadow-md p-6 text-center text-red-500">
-                    加载回忆失败: ${error.message}
+                    加载回忆失败: ${escapeHtml(error.message)}
                 </div>
             `;
         });
@@ -242,51 +251,26 @@ function loadMemories() {
 
 // 加载照片
 function loadPhotos() {
-    initPhotoModule();
-    // fetch(`${API_BASE_URL}/api/photos`)
-    //     .then(response => {
-    //         if (!response.ok) {
-    //             throw new Error('加载照片失败');
-    //         }
-    //         return response.json();
-    //     })
-    //     .then(data => {
-    //         // 只显示可见的照片
-    //         photos = data.filter(photo => photo.visible !== false);
-    //         renderPhotos();
-    //     })
-    //     .catch(error => {
-    //         console.error('加载照片失败:', error);
-    //         document.getElementById('photos-grid').innerHTML = `
-    //             <div class="col-span-full text-center text-red-500 py-16">
-    //                 加载照片失败: ${error.message}
-    //             </div>
-    //         `;
-    //     });
-}
-function initPhotoModule() {
     loadPhotosFromServer();
 }
 // 加载消息
 function loadMessages() {
     fetch(`${API_BASE_URL}/api/messages`)
         .then(response => {
-            if (!response.ok) {
-                throw new Error('加载消息失败');
-            }
+            if (!response.ok) throw new Error('加载消息失败');
             return response.json();
         })
-        .then(data => {
-            // 只显示可见的消息
-            messages = data.filter(message => message.visible !== false);
-            messagesCurrentPage = 1; // 重置为第一页
+        .then(result => {
+            const data = result.data || result;
+            messages = (Array.isArray(data) ? data : []).filter(message => message.visible !== false);
+            messagesCurrentPage = 1;
             renderMessages();
         })
         .catch(error => {
             console.error('加载消息失败:', error);
             document.getElementById('messages-list').innerHTML = `
                 <div class="bg-white rounded-xl shadow-md p-6 text-center text-red-500">
-                    加载消息失败: ${error.message}
+                    加载消息失败: ${escapeHtml(error.message)}
                 </div>
             `;
         });
@@ -361,12 +345,12 @@ function addMemoryToDOM(memory) {
                             <span class="text-xs font-medium ${comment.author === 'his' ? 'text-his-dark' : 'text-her-dark'}">${comment.author === 'his' ? '他' : '她'}</span>
                             <span class="text-xs text-gray-400">${formattedDate}</span>
                         </div>
-                        <p class="text-sm text-gray-700">${comment.content}</p>
+                        <p class="text-sm text-gray-700">${escapeHtml(comment.content)}</p>
                     </div>
                 </div>
             `;
         });
-        
+
         // 添加折叠/展开按钮
         if (hasMoreComments) {
             const hiddenCount = memory.comments.length - maxVisibleComments;
@@ -390,7 +374,7 @@ function addMemoryToDOM(memory) {
                                         <span class="text-xs font-medium ${comment.author === 'his' ? 'text-his-dark' : 'text-her-dark'}">${comment.author === 'his' ? '他' : '她'}</span>
                                         <span class="text-xs text-gray-400">${formattedDate}</span>
                                     </div>
-                                    <p class="text-sm text-gray-700">${comment.content}</p>
+                                    <p class="text-sm text-gray-700">${escapeHtml(comment.content)}</p>
                                 </div>
                             </div>
                         `;
@@ -423,11 +407,11 @@ function addMemoryToDOM(memory) {
     memoryElement.setAttribute('data-memory-id', memory.id);
     memoryElement.innerHTML = `
         <div class="flex justify-between items-start mb-3">
-            <h3 class="text-xl font-semibold text-gray-800">${memory.title}</h3>
+            <h3 class="text-xl font-semibold text-gray-800">${escapeHtml(memory.title)}</h3>
             <span class="text-sm px-2 py-1 rounded-full ${memory.author === 'his' ? 'bg-his-light text-his-dark' : 'bg-her-light text-her-dark'}">${memory.author === 'his' ? '他的回忆' : '她的回忆'}</span>
         </div>
         <p class="text-gray-600 text-sm mb-3">${formatDate(memory.date)}</p>
-        <p class="text-gray-700 mb-4">${memory.content}</p>
+        <p class="text-gray-700 mb-4">${escapeHtml(memory.content)}</p>
         
         <div class="${commentsContainerClass}">
             ${commentsHtml}
@@ -550,21 +534,18 @@ function addNewMemory() {
         }
         return response.json();
     })
-    .then(savedMemory => {
-        // 添加到数组
+    .then(result => {
+        const savedMemory = result.data || result;
         memories.unshift(savedMemory);
-        
-        // 添加到页面
-        addMemoryToDOM(savedMemory);
-        
-        // 重置表单
+        renderMemories();
+
         document.getElementById('memory-form').reset();
         document.getElementById('memory-form-container').classList.add('hidden');
         showNotification("保存回忆成功！");
     })
     .catch(error => {
         console.error('添加回忆失败:', error);
-        alert('添加回忆失败: ' + error.message);
+        showNotification('添加回忆失败: ' + error.message, true);
     });
 }
 
@@ -622,62 +603,6 @@ function cancelPhotoUpload() {
     document.getElementById('photo-upload-config').classList.add('hidden');
 }
 
-// 压缩图片函数
-function compressImage(file, maxSizeMB = 5) {
-    return new Promise((resolve, reject) => {
-        const maxSizeBytes = maxSizeMB * 1024 * 1024;
-        
-        // 如果文件小于目标大小，直接返回
-        if (file.size <= maxSizeBytes) {
-            resolve(file);
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                
-                // 计算压缩比例
-                const ratio = Math.sqrt(maxSizeBytes / file.size);
-                width *= ratio;
-                height *= ratio;
-                
-                canvas.width = width;
-                canvas.height = height;
-                
-                // 绘制图像
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                // 转换为Blob
-                canvas.toBlob(
-                    (blob) => {
-                        if (!blob) {
-                            reject(new Error('压缩图片失败'));
-                            return;
-                        }
-                        // 创建新文件
-                        const compressedFile = new File([blob], file.name, {
-                            type: file.type,
-                            lastModified: Date.now()
-                        });
-                        resolve(compressedFile);
-                    },
-                    file.type || 'image/jpeg',
-                    0.9 // 质量参数
-                );
-            };
-            img.src = event.target.result;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
 // 上传照片
 async function uploadPhotos() {
     const fileInput = document.getElementById('photo-upload');
@@ -731,12 +656,12 @@ async function uploadPhotos() {
         }
         
         // 检查是否有返回的照片数据
-        if (!data.photos || !Array.isArray(data.photos)) {
+        if (!data.data || !Array.isArray(data.data)) {
             throw new Error('服务器返回格式不正确');
         }
-        
+
         // 处理返回的照片URL，确保完整
-        const newPhotos = data.photos.map(photo => ({
+        const newPhotos = data.data.map(photo => ({
             ...photo,
             url: photo.url.startsWith('http') ? photo.url : `${API_BASE_URL}${photo.url}`,
             thumbnailUrl: photo.thumbnailUrl 
@@ -746,7 +671,6 @@ async function uploadPhotos() {
         
         // 添加到相册并重新渲染
         photos = [...newPhotos, ...photos];
-        savePhotosToLocalStorage(); // 本地备份
         renderPhotos();
         
         // 重置上传组件
@@ -793,12 +717,12 @@ function loadPhotosFromServer() {
         return response.json();
     })
     .then(data => {
-        if (!data.success || !Array.isArray(data.photos)) {
+        if (!data.success || !Array.isArray(data.data)) {
             throw new Error('服务器返回数据格式不正确');
         }
-        
+
         // 处理照片URL
-        photos = data.photos.map(photo => ({
+        photos = data.data.map(photo => ({
             ...photo,
             url: photo.url.startsWith('http') ? photo.url : `${API_BASE_URL}${photo.url}`,
             thumbnailUrl: photo.thumbnailUrl 
@@ -810,81 +734,18 @@ function loadPhotosFromServer() {
             return b.timestamp - a.timestamp;
         });
         
-        // 保存到本地存储作为备份
-        savePhotosToLocalStorage();
-        
         // 渲染相册
         renderPhotos();
     })
     .catch(error => {
         console.error('加载照片失败:', error);
-        
-        // 尝试从本地存储加载备份
-        const savedPhotos = localStorage.getItem('couplePhotos');
-        if (savedPhotos) {
-            photos = JSON.parse(savedPhotos);
-            renderPhotos();
-            showNotification(`加载失败，显示本地备份 (${error.message})`, true);
-        } else {
-            photosGrid.innerHTML = `
-                <div class="col-span-full text-center text-red-500 py-16">
-                    <i class="fa fa-exclamation-circle text-2xl mb-3"></i>
-                    <p>加载相册失败: ${error.message}</p>
-                    <button onclick="loadPhotosFromServer()" class="mt-3 text-primary hover:underline">重试</button>
-                </div>
-            `;
-        }
-    });
-}
-// 保存照片到本地存储
-function savePhotosToLocalStorage() {
-    localStorage.setItem('couplePhotos', JSON.stringify(photos));
-}
-// 从本地存储加载照片
-function loadPhotosFromLocalStorage() {
-    const saved = localStorage.getItem('couplePhotos');
-    if (saved) {
-        photos = JSON.parse(saved);
-    }
-}
-// 生成缩略图
-function generateThumbnail(file) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                const maxDimension = 200;
-                
-                // 计算缩略图尺寸
-                let width = img.width;
-                let height = img.height;
-                
-                if (width > height) {
-                    if (width > maxDimension) {
-                        height = (height * maxDimension) / width;
-                        width = maxDimension;
-                    }
-                } else {
-                    if (height > maxDimension) {
-                        width = (width * maxDimension) / height;
-                        height = maxDimension;
-                    }
-                }
-                
-                canvas.width = width;
-                canvas.height = height;
-                
-                // 绘制缩略图
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                resolve(canvas.toDataURL(file.type || 'image/jpeg'));
-            };
-            img.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
+        photosGrid.innerHTML = `
+            <div class="col-span-full text-center text-red-500 py-16">
+                <i class="fa fa-exclamation-circle text-2xl mb-3"></i>
+                <p>加载相册失败: ${escapeHtml(error.message)}</p>
+                <button onclick="loadPhotosFromServer()" class="mt-3 text-primary hover:underline">重试</button>
+            </div>
+        `;
     });
 }
 
@@ -915,28 +776,29 @@ function renderPhotos() {
     
     currentPhotos.forEach((photo, index) => {
         const photoElement = document.createElement('div');
-        photoElement.className = 'rounded-xl overflow-hidden shadow-md cursor-pointer transform hover:scale-[1.02] transition aspect-square bg-gray-100';
-        
-        // 确保使用正确的图片URL
-        const imageUrl = photo.thumbnailUrl 
+        photoElement.className = 'group relative rounded-xl overflow-hidden shadow-md cursor-pointer aspect-square bg-gray-100';
+
+        const imageUrl = photo.thumbnailUrl
             ? (photo.thumbnailUrl.startsWith('http') ? photo.thumbnailUrl : `${API_BASE_URL}${photo.thumbnailUrl}`)
             : (photo.url.startsWith('http') ? photo.url : `${API_BASE_URL}${photo.url}`);
-        
-        // 照片卡片内容，包含缩略信息
+
         photoElement.innerHTML = `
-            <img src="${imageUrl}" alt="相册照片" class="w-full h-full object-cover">
+            <img src="${imageUrl}" alt="${escapeHtml(photo.description || '照片')}" loading="lazy" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <i class="fa fa-search-plus text-white text-xl"></i>
+            </div>
+            <span class="absolute top-2 right-2 text-xs px-1.5 py-0.5 rounded ${photo.author === 'his' ? 'bg-his-primary/80' : 'bg-her-primary/80'} text-white">${photo.author === 'his' ? '他' : '她'}</span>
             ${photo.description ? `
-                <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2 text-xs mask-gradient">
-                    ${photo.description.substring(0, 20)}${photo.description.length > 20 ? '...' : ''}
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white p-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                    ${escapeHtml(photo.description.substring(0, 30))}${photo.description.length > 30 ? '...' : ''}
                 </div>
             ` : ''}
         `;
-        
-        // 点击查看大图
+
         photoElement.addEventListener('click', () => {
             openPhotoViewer(startIndex + index);
         });
-        
+
         photosGrid.appendChild(photoElement);
     });
     
@@ -970,33 +832,6 @@ function updatePagination() {
     
     // 显示分页控件
     document.getElementById('photo-pagination').classList.remove('hidden');
-}
-// 添加照片到网格
-function addPhotoToGrid(photo) {
-    const photosGrid = document.getElementById('photos-grid');
-    
-    const photoItem = document.createElement('div');
-    photoItem.className = 'photo-item group relative cursor-pointer aspect-square bg-gray-100 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition fade-in';
-    photoItem.innerHTML = `
-        <img src="${photo.thumbnail || photo.url}" alt="${photo.caption || '照片'}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
-        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <i class="fa fa-search-plus text-white text-xl"></i>
-        </div>
-        <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-            <p>${photo.caption || '无描述'}</p>
-        </div>
-        <span class="absolute top-2 right-2 text-xs px-1.5 py-0.5 rounded ${photo.author === 'his' ? 'bg-his-primary/80' : 'bg-her-primary/80'} text-white">${photo.author === 'his' ? '他' : '她'}</span>
-    `;
-    
-    // 添加点击查看大图事件
-    photoItem.addEventListener('click', () => {
-        const index = photos.findIndex(p => p.id === photo.id);
-        if (index !== -1) {
-            openPhotoViewer(index);
-        }
-    });
-    
-    photosGrid.appendChild(photoItem);
 }
 // 更新分页控件状态
 function updatePaginationControls(type, currentPage, totalPages, totalItems) {
@@ -1061,7 +896,6 @@ function openPhotoViewer(index) {
     viewerImage.src = originalUrl;
     viewerImage.alt = photo.description || '照片大图';
     
-    // 更新图片信息，包括描述
     document.getElementById('photo-caption').textContent = photo.description || '无描述';
     document.getElementById('photo-desc-text').textContent = photo.description || '暂无描述';
     document.getElementById('photo-author-date').textContent = 
@@ -1121,7 +955,7 @@ function loadPhotoComments(photoId) {
                     <span class="text-sm font-medium">${comment.author === 'his' ? '他' : '她'}</span>
                     <span class="text-xs text-gray-500">${formatRelativeTime(comment.date)}</span>
                 </div>
-                <p class="text-sm">${comment.content}</p>
+                <p class="text-sm">${escapeHtml(comment.content)}</p>
             </div>
         `;
         commentsContainer.appendChild(commentElement);
@@ -1178,8 +1012,6 @@ function addPhotoComment() {
         }
         currentPhoto.comments.push(data.comment);
         
-        // 保存到本地并刷新评论显示
-        savePhotosToLocalStorage();
         loadPhotoComments(currentPhoto.id);
         
         // 清空输入
@@ -1302,21 +1134,18 @@ function addNewMessage() {
         }
         return response.json();
     })
-    .then(savedMessage => {
-        // 添加到数组
+    .then(result => {
+        const savedMessage = result.data || result;
         messages.unshift(savedMessage);
-        
-        // 添加到页面
-        addMessageToDOM(savedMessage);
-        
-        // 重置表单
+        renderMessages();
+
         document.getElementById('message-form').reset();
         document.getElementById('message-form-container').classList.add('hidden');
         showNotification("发送成功！");
     })
     .catch(error => {
         console.error('添加消息失败:', error);
-        alert('添加消息失败: ' + error.message);
+        showNotification('添加消息失败: ' + error.message, true);
     });
 }
 
@@ -1332,7 +1161,7 @@ function addMessageToDOM(message) {
             <span class="text-xs text-gray-500">${formatDate(message.date)}</span>
         </div>
         <div class="message-content ${message.shouldBlur ? 'blur-text cursor-pointer' : ''} transition-all duration-300">
-            ${message.content}
+            ${escapeHtml(message.content)}
         </div>
     `;
     

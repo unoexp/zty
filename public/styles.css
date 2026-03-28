@@ -21,16 +21,6 @@ button, .btn {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-/* 次要按钮样式 */
-.border border-gray-300 {
-    border-color: #d1d5db !important;
-    color: #4b5563 !important;
-}
-
-.border border-gray-300:hover {
-    background-color: #f3f4f6 !important;
-    border-color: #9ca3af !important;
-}
 
 /* 危险按钮（删除等） */
 .text-red-600 {
@@ -162,8 +152,12 @@ tr:hover {
 }
 
 /* 照片网格样式 */
-.photo-grid {
-    gap: 1.5rem;
+.photo-grid img {
+    transition: transform 0.3s ease;
+}
+
+.photo-grid > div:hover img {
+    transform: scale(1.03);
 }
 
 /* 响应式调整 */
