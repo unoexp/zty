@@ -901,17 +901,15 @@ function openPhotoViewer(index) {
 }
 function updateCalendarData(newData) {
     const targetIndex = calendarData.findIndex(item => item.date === newData.date);
-    const targetItem = calendarData.find(item => item.date === newData.date);
     if (targetIndex !== -1) {
-        calendarData[targetIndex] = newData;
-        calendarData[targetIndex] = {
-            ...calendarData[targetIndex], // 保留旧数据
-            ...newData, // 用新数据覆盖相同字段
-        };
-    }else {
+        calendarData[targetIndex] = { ...calendarData[targetIndex], ...newData };
+    } else {
         calendarData.push(newData);
         calendarData.sort((a, b) => new Date(a.date) - new Date(b.date));
     }
+    // 同步更新 byDate 索引
+    if (!calendarData.byDate) calendarData.byDate = {};
+    calendarData.byDate[newData.date] = calendarData.find(item => item.date === newData.date);
 }
 
 // 加载照片评论

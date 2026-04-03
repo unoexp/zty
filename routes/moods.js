@@ -118,11 +118,11 @@ router.get('/query', (req, res) => {
     if (record) {
         res.json({
             date: record.date,
-            his: { mood: record.his_mood, imageUrl: record.his_image_url, thumbnailUrl: record.his_thumbnail_url },
-            her: { mood: record.her_mood, imageUrl: record.her_image_url, thumbnailUrl: record.her_thumbnail_url }
+            his: { mood: record.his_mood, note: record.his_note || '', imageUrl: record.his_image_url, thumbnailUrl: record.his_thumbnail_url },
+            her: { mood: record.her_mood, note: record.her_note || '', imageUrl: record.her_image_url, thumbnailUrl: record.her_thumbnail_url }
         });
     } else {
-        res.json({ date, hisMood: '', herMood: '', hisImage: '', herImage: '' });
+        res.json({ date, his: { mood: '', note: '' }, her: { mood: '', note: '' } });
     }
 });
 
