@@ -1236,56 +1236,50 @@ function openPhotoViewer(index) {
         : `${API_BASE_URL}${photo.thumbnailUrl || photo.url}`;
     const originalUrl = photo.url.startsWith('http') ? photo.url : `${API_BASE_URL}${photo.url}`;
 
-    // 清除旧图，防止闪现上一张
-    viewerImage.removeAttribute('src');
-    viewerImage.style.filter = 'blur(20px)';
-    viewerImage.style.transform = 'scale(1.05)';
-    viewerImage.style.transition = 'none';
-    viewerImage.alt = photo.description || '照片大图';
-
-    document.getElementById('photo-caption').textContent = photo.description || '无描述';
-    document.getElementById('photo-desc-text').textContent = photo.description || '暂无描述';
-    document.getElementById('photo-author-date').textContent =
-        `${photo.author === 'his' ? '他' : '她'} · ${formatDate(photo.date)}`;
-
-    // 加载评论
-    loadPhotoComments(photo.id);
-
-    // viewer 保持隐藏，先设置缩略图 src，等渲染完再显示
-    viewerImage.onload = function onThumbReady() {
+    // 预加载缩略图到离屏 Image，全部就绪后一次性显示
+    const thumbImg = new Image();
+    thumbImg.onload = function() {
         viewerImage.onload = null;
-        // 缩略图已渲染到 img 元素，现在安全显示 viewer
-        viewer.classList.remove('hidden');
-        // 强制浏览器计算布局后再加 transition 淡入
-        viewer.offsetHeight;
-        viewer.style.opacity = '1';
-        document.body.style.overflow = 'hidden';
+        viewerImage.style.transition = 'none';
+        viewerImage.style.filter = 'blur(20px)';
+        viewerImage.style.transform = 'scale(1.05)';
+        viewerImage.src = thumbUrl;
 
-        // 开启图片过渡动画
-        viewerImage.style.transition = 'filter 0.5s ease, transform 0.5s ease';
+        document.getElementById('photo-caption').textContent = photo.description || '无描述';
+        document.getElementById('photo-desc-text').textContent = photo.description || '暂无描述';
+        document.getElementById('photo-author-date').textContent =
+            `${photo.author === 'his' ? '他' : '她'} · ${formatDate(photo.date)}`;
+        loadPhotoComments(photo.id);
 
-        // 后台加载原图
-        const fullImg = new Image();
-        fullImg.onload = function() {
-            viewerImage.src = originalUrl;
-            viewerImage.style.filter = 'none';
-            viewerImage.style.transform = 'scale(1)';
-        };
-        fullImg.src = originalUrl;
+        // 等一帧确保 img 已绘制缩略图，再淡入 viewer
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                viewer.style.opacity = '1';
+                viewer.style.pointerEvents = 'auto';
+                document.body.style.overflow = 'hidden';
+
+                // 开启过渡动画后加载原图
+                viewerImage.style.transition = 'filter 0.5s ease, transform 0.5s ease';
+                const fullImg = new Image();
+                fullImg.onload = function() {
+                    viewerImage.src = originalUrl;
+                    viewerImage.style.filter = 'none';
+                    viewerImage.style.transform = 'scale(1)';
+                };
+                fullImg.src = originalUrl;
+            });
+        });
     };
-    viewer.style.opacity = '0';
-    viewer.style.transition = 'opacity 0.15s ease';
-    viewerImage.src = thumbUrl;
+    thumbImg.src = thumbUrl;
 }
 
 // 关闭图片查看器
 function closePhotoViewer() {
     const viewer = document.getElementById('photo-viewer');
     viewer.style.opacity = '0';
+    viewer.style.pointerEvents = 'none';
     setTimeout(() => {
-        viewer.classList.add('hidden');
-        viewer.style.opacity = '';
-        viewer.style.transition = '';
+        document.getElementById('viewer-image').removeAttribute('src');
     }, 200);
     document.body.style.overflow = '';
 }
