@@ -1236,9 +1236,11 @@ function openPhotoViewer(index) {
         : `${API_BASE_URL}${photo.thumbnailUrl || photo.url}`;
     const originalUrl = photo.url.startsWith('http') ? photo.url : `${API_BASE_URL}${photo.url}`;
 
+    // 清除旧图，防止闪现上一张
+    viewerImage.removeAttribute('src');
     viewerImage.style.filter = 'blur(20px)';
     viewerImage.style.transform = 'scale(1.05)';
-    viewerImage.style.transition = 'filter 0.5s ease, transform 0.5s ease';
+    viewerImage.style.transition = 'none';
     viewerImage.alt = photo.description || '照片大图';
 
     document.getElementById('photo-caption').textContent = photo.description || '无描述';
@@ -1249,21 +1251,20 @@ function openPhotoViewer(index) {
     // 加载评论
     loadPhotoComments(photo.id);
 
-    // 先让viewer透明，等缩略图加载后再淡入，避免白闪
-    viewer.style.opacity = '0';
-    viewer.style.transition = 'opacity 0.2s ease';
-    viewer.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    // viewer 保持隐藏，先设置缩略图 src，等渲染完再显示
+    viewerImage.onload = function onThumbReady() {
+        viewerImage.onload = null;
+        // 缩略图已渲染到 img 元素，现在安全显示 viewer
+        viewer.classList.remove('hidden');
+        // 强制浏览器计算布局后再加 transition 淡入
+        viewer.offsetHeight;
+        viewer.style.opacity = '1';
+        document.body.style.overflow = 'hidden';
 
-    // 加载缩略图，完成后淡入viewer
-    const thumbImg = new Image();
-    thumbImg.onload = function() {
-        viewerImage.src = thumbUrl;
-        requestAnimationFrame(() => {
-            viewer.style.opacity = '1';
-        });
+        // 开启图片过渡动画
+        viewerImage.style.transition = 'filter 0.5s ease, transform 0.5s ease';
 
-        // 后台加载原图，加载完成后切换并去掉模糊
+        // 后台加载原图
         const fullImg = new Image();
         fullImg.onload = function() {
             viewerImage.src = originalUrl;
@@ -1272,7 +1273,9 @@ function openPhotoViewer(index) {
         };
         fullImg.src = originalUrl;
     };
-    thumbImg.src = thumbUrl;
+    viewer.style.opacity = '0';
+    viewer.style.transition = 'opacity 0.15s ease';
+    viewerImage.src = thumbUrl;
 }
 
 // 关闭图片查看器
