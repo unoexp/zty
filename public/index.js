@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 初始化事件监听
     initEventListeners();
     initNewFeatureListeners();
+    initDockScrollSpy();
 
     // 加载数据
     loadAllData();
@@ -103,6 +104,65 @@ function initUserInterface() {
 }
 
 // 滚动入场动画
+// ---- 底部导航栏 ----
+let dockOpen = true;
+
+function toggleDock() {
+    dockOpen = !dockOpen;
+    const tray = document.getElementById('dock-tray');
+    const expandBtn = document.getElementById('dock-expand-btn');
+    const closeIcon = tray?.querySelector('.dock-close-btn i');
+    if (dockOpen) {
+        tray.classList.remove('dock-closed');
+        tray.classList.add('dock-open');
+        expandBtn?.classList.remove('show');
+        if (closeIcon) closeIcon.className = 'fa fa-angle-up';
+    } else {
+        tray.classList.add('dock-closed');
+        tray.classList.remove('dock-open');
+        expandBtn?.classList.add('show');
+        if (closeIcon) closeIcon.className = 'fa fa-angle-down';
+    }
+}
+
+function initDockScrollSpy() {
+    const dockItems = document.querySelectorAll('#dock-tray .dock-item[data-section]');
+    if (!dockItems.length) return;
+
+    // 点击平滑滚动
+    dockItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const section = document.getElementById(item.dataset.section);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            // 激活项滚动到可视区域
+            item.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        });
+    });
+
+    // 滚动时高亮当前 section
+    const sectionIds = [...dockItems].map(i => i.dataset.section);
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+            const scrollY = window.scrollY + 200;
+            let activeId = sectionIds[0];
+            for (const id of sectionIds) {
+                const el = document.getElementById(id);
+                if (el && el.offsetTop <= scrollY) activeId = id;
+            }
+            dockItems.forEach(item => {
+                item.classList.toggle('active', item.dataset.section === activeId);
+            });
+            ticking = false;
+        });
+    });
+}
+
 function initScrollAnimations() {
     document.querySelectorAll('section, #days-together-card, #daily-section, .grid').forEach(el => {
         el.classList.add('animate-on-scroll');
@@ -1624,6 +1684,9 @@ function loadNewFeatures() {
     loadWishes();
     loadTasks();
     loadDailyQuestion();
+    loadLoveLetters();
+    loadDateIdeaCategories();
+    loadStats();
 }
 
 function initNewFeatureListeners() {
@@ -1655,6 +1718,32 @@ function initNewFeatureListeners() {
         e.preventDefault();
         addTask();
     });
+
+    // 情书时光胶囊
+    document.getElementById('add-letter-btn')?.addEventListener('click', () => {
+        document.getElementById('letter-form-container').classList.toggle('hidden');
+    });
+    document.getElementById('cancel-letter')?.addEventListener('click', () => {
+        document.getElementById('letter-form-container').classList.add('hidden');
+        document.getElementById('letter-form').reset();
+    });
+    document.getElementById('letter-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        addLoveLetter();
+    });
+
+    // 约会建议
+    document.getElementById('add-idea-btn')?.addEventListener('click', () => {
+        document.getElementById('idea-form-container').classList.toggle('hidden');
+    });
+    document.getElementById('cancel-idea')?.addEventListener('click', () => {
+        document.getElementById('idea-form-container').classList.add('hidden');
+        document.getElementById('idea-form').reset();
+    });
+    document.getElementById('idea-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        addDateIdea();
+    });
 }
 
 // ---- 纪念日 ----
@@ -1666,6 +1755,14 @@ async function loadAnniversaries() {
             const stats = await statsRes.json();
             if (stats.success && stats.data.daysTogether > 0) {
                 document.getElementById('days-count').textContent = stats.data.daysTogether;
+                // 显示里程碑
+                if (stats.data.nextMilestone) {
+                    const milestoneEl = document.getElementById('milestone-info');
+                    const daysLeft = stats.data.nextMilestone.days - stats.data.daysTogether;
+                    document.getElementById('next-milestone').textContent = stats.data.nextMilestone.label;
+                    document.getElementById('milestone-countdown').textContent = `（还有 ${daysLeft} 天）`;
+                    milestoneEl.classList.remove('hidden');
+                }
             }
         }
 
@@ -1984,4 +2081,295 @@ async function answerQuestion(id) {
         body: JSON.stringify({ answer })
     });
     loadDailyQuestion();
+}
+
+// ============================================================
+// ---- 设置在一起日期 ----
+// ============================================================
+function showSetTogetherDate() {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+    modal.innerHTML = `
+        <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="this.parentElement.remove()"></div>
+        <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 class="text-lg font-medium mb-4">设置在一起的日期</h3>
+            <p class="text-sm text-gray-400 mb-3">设置后，首页计时器将以此日期计算</p>
+            <input type="date" id="together-date-input" class="w-full px-3 py-2 border rounded-lg text-sm mb-4">
+            <div class="flex justify-end gap-3">
+                <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">取消</button>
+                <button onclick="saveTogetherDate()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm">保存</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    // 加载现有日期
+    fetch('/api/timeline/together-date', { credentials: 'include' })
+        .then(r => r.json())
+        .then(d => { if (d.data?.date) document.getElementById('together-date-input').value = d.data.date; });
+}
+
+async function saveTogetherDate() {
+    const date = document.getElementById('together-date-input').value;
+    if (!date) return;
+    await fetch('/api/timeline/together-date', {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date })
+    });
+    document.querySelector('.fixed.z-50')?.remove();
+    loadAnniversaries();
+}
+
+// ============================================================
+// ---- 情书时光胶囊 ----
+// ============================================================
+async function loadLoveLetters() {
+    try {
+        const res = await fetch('/api/love-letters', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const container = document.getElementById('letters-list');
+        if (!data.success || !data.data || data.data.length === 0) {
+            container.innerHTML = '<div class="text-center text-gray-400 py-8">还没有时光胶囊，写一封信给未来的TA吧</div>';
+            return;
+        }
+        container.innerHTML = data.data.map(l => renderLetter(l)).join('');
+    } catch (e) {
+        console.error('加载情书失败:', e);
+    }
+}
+
+function renderLetter(l) {
+    const isAuthor = l.author === currentUser;
+    const authorLabel = l.author === 'his' ? '他' : '她';
+    const recipientLabel = l.recipient === 'his' ? '他' : '她';
+
+    if (l.canOpen) {
+        // 可以打开的信
+        return `
+            <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md p-6 border border-pink-100 ${l.isNew ? 'ring-2 ring-pink-300 ring-offset-2' : ''}">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">${l.isOpened ? '💌' : '✨'}</span>
+                        <span class="text-xs text-gray-400">${authorLabel} → ${recipientLabel}</span>
+                        ${l.isNew ? '<span class="text-xs bg-pink-100 text-pink-600 px-2 py-0.5 rounded-full">新信件!</span>' : ''}
+                    </div>
+                    <span class="text-xs text-gray-400">${l.createdAt?.split('T')[0] || ''}</span>
+                </div>
+                ${l.isOpened || isAuthor ? `
+                    <p class="text-gray-700 whitespace-pre-wrap leading-relaxed">${escapeHtml(l.content)}</p>
+                    ${l.openedAt ? `<p class="text-xs text-gray-300 mt-3">开封于 ${l.openedAt.split('T')[0]}</p>` : ''}
+                ` : `
+                    <div class="text-center py-4">
+                        <button onclick="openLetter(${l.id})" class="bg-gradient-to-r from-pink-400 to-rose-400 text-white px-6 py-2 rounded-full text-sm shadow-md hover:shadow-lg transition-all">
+                            <i class="fa fa-envelope-open-o mr-1"></i>打开信件
+                        </button>
+                    </div>
+                `}
+                ${isAuthor ? `<button onclick="deleteLetter(${l.id})" class="text-xs text-gray-300 hover:text-red-400 mt-2 transition"><i class="fa fa-trash-o"></i></button>` : ''}
+            </div>
+        `;
+    } else {
+        // 还没到开封日期
+        const daysLeft = Math.ceil((new Date(l.openDate) - new Date()) / (1000 * 60 * 60 * 24));
+        return `
+            <div class="bg-gradient-to-br from-gray-50 to-pink-50/30 rounded-2xl shadow-md p-6 border border-dashed border-pink-200 relative overflow-hidden">
+                <div class="absolute top-3 right-3 text-3xl opacity-20">🔒</div>
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-2xl">📮</span>
+                    <span class="text-xs text-gray-400">${authorLabel} → ${recipientLabel}</span>
+                </div>
+                <p class="text-gray-400 text-sm italic mb-2">这封信还没有到开封的日子...</p>
+                <div class="flex items-center justify-between">
+                    <p class="text-xs text-gray-400">开封日期：${l.openDate}</p>
+                    <p class="text-sm font-semibold text-pink-400">还有 ${daysLeft} 天</p>
+                </div>
+                ${isAuthor ? `<button onclick="deleteLetter(${l.id})" class="text-xs text-gray-300 hover:text-red-400 mt-2 transition"><i class="fa fa-trash-o"></i></button>` : ''}
+            </div>
+        `;
+    }
+}
+
+async function addLoveLetter() {
+    const content = document.getElementById('letter-content').value.trim();
+    const openDate = document.getElementById('letter-open-date').value;
+    if (!content || !openDate) return;
+
+    const res = await fetch('/api/love-letters', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, openDate })
+    });
+    const data = await res.json();
+    if (!data.success) {
+        alert(data.message || '发送失败');
+        return;
+    }
+    document.getElementById('letter-form-container').classList.add('hidden');
+    document.getElementById('letter-form').reset();
+    loadLoveLetters();
+}
+
+async function openLetter(id) {
+    await fetch('/api/love-letters/' + id + '/open', {
+        method: 'PATCH', credentials: 'include'
+    });
+    loadLoveLetters();
+}
+
+async function deleteLetter(id) {
+    if (!confirm('确定删除这封信吗？')) return;
+    await fetch('/api/love-letters/' + id, {
+        method: 'DELETE', credentials: 'include'
+    });
+    loadLoveLetters();
+}
+
+// ============================================================
+// ---- 随机约会建议 ----
+// ============================================================
+async function loadDateIdeaCategories() {
+    try {
+        const res = await fetch('/api/date-ideas/categories', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const select = document.getElementById('idea-category-filter');
+        if (!select || !data.success) return;
+        // Keep the "全部分类" option, add others
+        data.data.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.value;
+            opt.textContent = c.label;
+            select.appendChild(opt);
+        });
+    } catch (e) {
+        console.error('加载分类失败:', e);
+    }
+}
+
+const categoryEmoji = {
+    home: '🏠', outdoor: '🌿', food: '🍜',
+    entertainment: '🎬', creative: '🎨', other: '💡'
+};
+
+async function randomDateIdea(category) {
+    const cat = category || document.getElementById('idea-category-filter')?.value || 'all';
+    const emojiEl = document.getElementById('date-idea-emoji');
+    const resultEl = document.getElementById('date-idea-result');
+    const catEl = document.getElementById('date-idea-category');
+
+    // 动画效果
+    emojiEl.style.transition = 'transform 0.3s';
+    emojiEl.style.transform = 'rotate(360deg) scale(1.2)';
+    resultEl.textContent = '抽取中...';
+    catEl.textContent = '';
+
+    try {
+        const res = await fetch(`/api/date-ideas/random?category=${cat}`, { credentials: 'include' });
+        const data = await res.json();
+
+        setTimeout(() => {
+            emojiEl.style.transform = 'rotate(0deg) scale(1)';
+            if (data.success && data.data) {
+                const categoryLabels = { home: '居家', outdoor: '户外', food: '美食', entertainment: '娱乐', creative: '创意', other: '其他' };
+                emojiEl.textContent = categoryEmoji[data.data.category] || '💡';
+                resultEl.textContent = data.data.title;
+                catEl.textContent = categoryLabels[data.data.category] || data.data.category;
+            } else {
+                emojiEl.textContent = '🤔';
+                resultEl.textContent = '暂无建议，添加一些吧！';
+            }
+        }, 400);
+    } catch (e) {
+        emojiEl.textContent = '❌';
+        resultEl.textContent = '加载失败';
+    }
+}
+
+async function addDateIdea() {
+    const title = document.getElementById('idea-title').value.trim();
+    const category = document.getElementById('idea-category').value;
+    if (!title) return;
+
+    await fetch('/api/date-ideas', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, category })
+    });
+    document.getElementById('idea-form-container').classList.add('hidden');
+    document.getElementById('idea-form').reset();
+}
+
+// ============================================================
+// ---- 关系数据统计 ----
+// ============================================================
+async function loadStats() {
+    try {
+        const res = await fetch('/api/timeline/stats', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.success) return;
+        const s = data.data;
+
+        const statsCards = [
+            { icon: '📝', label: '回忆', value: s.memoryCount, color: 'blue' },
+            { icon: '📷', label: '照片', value: s.photoCount, color: 'rose' },
+            { icon: '💬', label: '悄悄话', value: s.messageCount, color: 'purple' },
+            { icon: '💭', label: '评论', value: s.commentCount, color: 'indigo' },
+            { icon: '😊', label: '心情打卡', value: s.moodDays + ' 天', color: 'amber' },
+            { icon: '📍', label: '足迹', value: s.locationCount, color: 'emerald' },
+            { icon: '⭐', label: '愿望达成', value: `${s.wishDoneCount}/${s.wishCount}`, color: 'yellow' },
+            { icon: '✅', label: '任务完成', value: `${s.taskDoneCount}/${s.taskCount}`, color: 'green' },
+        ];
+
+        const grid = document.getElementById('stats-grid');
+        grid.innerHTML = statsCards.map(c => `
+            <div class="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm p-4 text-center border border-gray-100 hover:shadow-md transition">
+                <div class="text-2xl mb-1">${c.icon}</div>
+                <p class="text-2xl font-bold text-${c.color}-500">${c.value}</p>
+                <p class="text-xs text-gray-400 mt-1">${c.label}</p>
+            </div>
+        `).join('');
+
+        // 月度趋势图（简单 bar chart）
+        renderMonthlyChart(s.monthly);
+    } catch (e) {
+        console.error('加载统计失败:', e);
+    }
+}
+
+function renderMonthlyChart(monthly) {
+    const container = document.getElementById('monthly-chart');
+    if (!monthly || monthly.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-sm">暂无数据</p>';
+        return;
+    }
+
+    // 取最近6个月
+    const recent = monthly.slice(0, 6).reverse();
+    const maxVal = Math.max(...recent.map(m => m.memories + m.photos + m.messages), 1);
+
+    container.innerHTML = recent.map(m => {
+        const total = m.memories + m.photos + m.messages;
+        const pct = Math.round((total / maxVal) * 100);
+        const memPct = total > 0 ? Math.round((m.memories / total) * 100) : 0;
+        const photoPct = total > 0 ? Math.round((m.photos / total) * 100) : 0;
+        return `
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-gray-400 w-16 shrink-0">${m.month}</span>
+                <div class="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden relative">
+                    <div class="absolute inset-y-0 left-0 bg-blue-400 rounded-l-full" style="width:${memPct * pct / 100}%"></div>
+                    <div class="absolute inset-y-0 bg-rose-400" style="left:${memPct * pct / 100}%;width:${photoPct * pct / 100}%"></div>
+                    <div class="absolute inset-y-0 bg-purple-400 rounded-r-full" style="left:${(memPct + photoPct) * pct / 100}%;width:${(100 - memPct - photoPct) * pct / 100}%"></div>
+                </div>
+                <span class="text-xs text-gray-500 w-8 text-right">${total}</span>
+            </div>
+        `;
+    }).join('') + `
+        <div class="flex items-center justify-center gap-4 mt-3 text-xs text-gray-400">
+            <span class="flex items-center gap-1"><span class="w-3 h-3 bg-blue-400 rounded-full inline-block"></span>回忆</span>
+            <span class="flex items-center gap-1"><span class="w-3 h-3 bg-rose-400 rounded-full inline-block"></span>照片</span>
+            <span class="flex items-center gap-1"><span class="w-3 h-3 bg-purple-400 rounded-full inline-block"></span>悄悄话</span>
+        </div>
+    `;
 }

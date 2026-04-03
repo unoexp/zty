@@ -2,6 +2,9 @@
    情侣回忆应用 - 温暖有爱主题
    ============================================================ */
 
+/* 禁止移动端点击高亮残留 */
+a, button { -webkit-tap-highlight-color: transparent; }
+
 /* ---- 基础与背景 ---- */
 body {
     color: #444;
@@ -430,6 +433,136 @@ section:first-child::before { display: none; }
     border: 1px dashed rgba(0,0,0,0.1);
 }
 
+/* ---- 二级导航（顶部子菜单） ---- */
+#dock-tray {
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+    display: flex;
+    align-items: center;
+    padding: 0;
+    max-height: 40px;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.25s;
+    opacity: 1;
+}
+#dock-tray.dock-closed {
+    max-height: 0;
+    opacity: 0;
+    border-bottom-color: transparent;
+}
+
+#dock-scroll {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 5px 4px 5px 10px;
+}
+#dock-scroll::-webkit-scrollbar { display: none; }
+
+/* 导航项 */
+#dock-tray .dock-item {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    text-decoration: none !important;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+/* 清除所有残留状态 */
+#dock-tray .dock-item,
+#dock-tray .dock-item:visited,
+#dock-tray .dock-item:focus,
+#dock-tray .dock-item:focus-visible,
+#dock-tray .dock-item:active,
+#dock-tray .dock-item:hover {
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+}
+#dock-tray .dock-item:hover:not(.active) {
+    background: rgba(0,0,0,0.05);
+    color: #374151;
+}
+/* 激活态：浅亮背景 + 深色主题文字 */
+#dock-tray .dock-item.active {
+    background: color-mix(in srgb, var(--primary-color, #FF75A0) 15%, white) !important;
+    color: var(--primary-color, #FF75A0) !important;
+    font-weight: 600;
+}
+#dock-tray .dock-item.active .dock-dot {
+    background: var(--primary-color, #FF75A0) !important;
+}
+
+/* 圆点 */
+.dock-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* 分隔 */
+.dock-sep {
+    width: 1px;
+    height: 16px;
+    background: rgba(0,0,0,0.08);
+    flex-shrink: 0;
+    margin: 0 3px;
+}
+
+/* 收起/展开按钮 */
+.dock-close-btn {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: rgba(0,0,0,0.05);
+    border-radius: 8px;
+    color: #9ca3af;
+    font-size: 14px;
+    cursor: pointer;
+    margin-right: 6px;
+    transition: all 0.2s;
+}
+.dock-close-btn:hover { background: rgba(0,0,0,0.1); color: #6b7280; }
+
+/* 收起后在一级导航右侧显示展开按钮 */
+#dock-expand-btn {
+    display: none;
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: rgba(0,0,0,0.05);
+    border-radius: 8px;
+    color: #9ca3af;
+    font-size: 12px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+#dock-expand-btn.show { display: inline-flex; }
+#dock-expand-btn:hover { background: rgba(0,0,0,0.1); color: #6b7280; }
+
 /* ---- 响应式 ---- */
 @media (max-width: 640px) {
     body { padding: 0; }
@@ -442,10 +575,12 @@ section:first-child::before { display: none; }
     nav .nav-link { font-size: 12px; padding: 6px 0; }
     nav ul { gap: 10px !important; }
 
-    /* 快捷入口2列 */
-    .shortcut-card { padding: 12px 6px; }
-    .shortcut-icon-wrap { width: 40px; height: 40px; border-radius: 12px; }
-    .shortcut-card span { font-size: 11px; }
+    /* 二级导航移动端适配 */
+    #dock-tray .dock-item { padding: 3px 8px; font-size: 11px; gap: 3px; }
+    .dock-dot { width: 4px; height: 4px; }
+    #dock-scroll { padding: 4px 4px 4px 8px; }
+    #dock-tray { max-height: 34px; }
+    .dock-close-btn { width: 24px; height: 24px; font-size: 12px; margin-right: 4px; }
 
     /* 互动卡片堆叠 */
     #daily-section .grid { grid-template-columns: 1fr !important; }

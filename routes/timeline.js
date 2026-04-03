@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../utils/db');
-const { optionalAuth } = require('../middleware/auth');
+const { optionalAuth, authenticateUser } = require('../middleware/auth');
 
 // GET / — 获取混合时间线
 router.get('/', optionalAuth, (req, res) => {
@@ -112,14 +112,42 @@ router.get('/stats', optionalAuth, (req, res) => {
     const photoCount = db.prepare('SELECT COUNT(*) AS count FROM photos').get().count;
     const messageCount = db.prepare('SELECT COUNT(*) AS count FROM messages').get().count;
 
-    // 找最早的记录日期
-    const earliestMemory = db.prepare('SELECT MIN(date) AS d FROM memories').get().d;
-    const earliestPhoto = db.prepare('SELECT MIN(date) AS d FROM photos').get().d;
-    const earliestMessage = db.prepare('SELECT MIN(date) AS d FROM messages').get().d;
+    // 额外统计
+    const wishCount = db.prepare('SELECT COUNT(*) AS count FROM wishes').get().count;
+    const wishDoneCount = db.prepare('SELECT COUNT(*) AS count FROM wishes WHERE completed = 1').get().count;
+    const taskCount = db.prepare('SELECT COUNT(*) AS count FROM tasks').get().count;
+    const taskDoneCount = db.prepare('SELECT COUNT(*) AS count FROM tasks WHERE status = ?').get('done').count;
+    const moodDays = db.prepare('SELECT COUNT(*) AS count FROM daily_moods WHERE his_mood != ? OR her_mood != ?').get('', '').count;
+    const commentCount = db.prepare('SELECT COUNT(*) AS count FROM comments').get().count;
+    const locationCount = db.prepare('SELECT COUNT(*) AS count FROM locations').get().count;
+    const letterCount = db.prepare('SELECT COUNT(*) AS count FROM love_letters').get().count;
 
-    const dates = [earliestMemory, earliestPhoto, earliestMessage].filter(Boolean);
-    const earliestDate = dates.length > 0 ? dates.sort()[0] : new Date().toISOString();
+    // 优先使用设置的在一起日期，否则取最早记录
+    const togetherDateSetting = db.prepare("SELECT value FROM app_settings WHERE key = ?").get('together_date');
+
+    let earliestDate;
+    if (togetherDateSetting && togetherDateSetting.value) {
+        earliestDate = togetherDateSetting.value;
+    } else {
+        const earliestMemory = db.prepare('SELECT MIN(date) AS d FROM memories').get().d;
+        const earliestPhoto = db.prepare('SELECT MIN(date) AS d FROM photos').get().d;
+        const earliestMessage = db.prepare('SELECT MIN(date) AS d FROM messages').get().d;
+        const dates = [earliestMemory, earliestPhoto, earliestMessage].filter(Boolean);
+        earliestDate = dates.length > 0 ? dates.sort()[0] : new Date().toISOString();
+    }
     const daysTogether = Math.floor((Date.now() - new Date(earliestDate).getTime()) / (1000 * 60 * 60 * 24));
+
+    // 计算里程碑
+    const milestones = [
+        { days: 100, label: '100天' }, { days: 200, label: '200天' },
+        { days: 365, label: '1周年' }, { days: 500, label: '500天' },
+        { days: 730, label: '2周年' }, { days: 1000, label: '1000天' },
+        { days: 1095, label: '3周年' }, { days: 1461, label: '4周年' },
+        { days: 1826, label: '5周年' }, { days: 2000, label: '2000天' },
+        { days: 3652, label: '10周年' }
+    ];
+    const nextMilestone = milestones.find(m => m.days > daysTogether);
+    const passedMilestones = milestones.filter(m => m.days <= daysTogether);
 
     // 按月统计
     const monthlyMemories = db.prepare(`
@@ -160,11 +188,37 @@ router.get('/stats', optionalAuth, (req, res) => {
             memoryCount,
             photoCount,
             messageCount,
+            wishCount,
+            wishDoneCount,
+            taskCount,
+            taskDoneCount,
+            moodDays,
+            commentCount,
+            locationCount,
+            letterCount,
             daysTogether,
             earliestDate,
+            nextMilestone,
+            passedMilestones,
             monthly
         }
     });
+});
+
+// GET /together-date — 获取在一起的日期
+router.get('/together-date', (req, res) => {
+    const row = db.prepare("SELECT value FROM app_settings WHERE key = ?").get('together_date');
+    res.json({ success: true, data: { date: row ? row.value : null } });
+});
+
+// PUT /together-date — 设置在一起的日期
+router.put('/together-date', authenticateUser, (req, res) => {
+    const { date } = req.body;
+    if (!date) {
+        return res.status(400).json({ success: false, message: '日期不能为空' });
+    }
+    db.prepare("INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)").run('together_date', date);
+    res.json({ success: true });
 });
 
 module.exports = router;

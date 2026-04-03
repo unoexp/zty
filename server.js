@@ -34,6 +34,8 @@ app.use('/api/daily-questions', require('./routes/daily-questions'));
 app.use('/api/timeline', require('./routes/timeline'));
 app.use('/api/backup', require('./routes/backup'));
 app.use('/api/locations', require('./routes/locations'));
+app.use('/api/love-letters', require('./routes/love-letters'));
+app.use('/api/date-ideas', require('./routes/date-ideas'));
 
 // 兼容旧的 *-query 端点
 app.get('/api/memories-query', (req, res) => res.redirect(307, `/api/memories/query?${new URLSearchParams(req.query)}`));

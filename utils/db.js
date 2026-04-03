@@ -160,7 +160,62 @@ CREATE TABLE IF NOT EXISTS locations (
 );
 CREATE INDEX IF NOT EXISTS idx_locations_memory ON locations (memory_id);
 CREATE INDEX IF NOT EXISTS idx_locations_photo  ON locations (photo_id);
+
+-- 应用设置（键值对）
+CREATE TABLE IF NOT EXISTS app_settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL DEFAULT ''
+);
+
+-- 情书时光胶囊
+CREATE TABLE IF NOT EXISTS love_letters (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    content     TEXT    NOT NULL,
+    author      TEXT    NOT NULL CHECK (author IN ('his', 'her')),
+    recipient   TEXT    NOT NULL CHECK (recipient IN ('his', 'her')),
+    open_date   TEXT    NOT NULL,
+    is_opened   INTEGER NOT NULL DEFAULT 0,
+    opened_at   TEXT,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_love_letters_open_date ON love_letters (open_date);
+
+-- 约会建议
+CREATE TABLE IF NOT EXISTS date_ideas (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    title       TEXT    NOT NULL,
+    category    TEXT    NOT NULL DEFAULT 'other',
+    author      TEXT    CHECK (author IN ('his', 'her', 'system')),
+    used_count  INTEGER NOT NULL DEFAULT 0,
+    last_used   TEXT,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+);
 `);
+
+// 初始化内置约会建议（仅首次）
+const ideaCount = db.prepare('SELECT COUNT(*) AS c FROM date_ideas WHERE author = ?').get('system').c;
+if (ideaCount === 0) {
+    const defaultIdeas = [
+        ['一起做饭', 'home'], ['看日落', 'outdoor'], ['逛书店', 'outdoor'],
+        ['野餐', 'outdoor'], ['一起画画', 'home'], ['看电影', 'entertainment'],
+        ['去游乐园', 'outdoor'], ['拍一组情侣照', 'creative'], ['写信给对方', 'creative'],
+        ['一起运动', 'outdoor'], ['尝试新餐厅', 'food'], ['咖啡馆约会', 'food'],
+        ['一起看星星', 'outdoor'], ['逛夜市', 'food'], ['DIY礼物', 'creative'],
+        ['一起泡温泉', 'outdoor'], ['海边散步', 'outdoor'], ['一起玩游戏', 'entertainment'],
+        ['骑行', 'outdoor'], ['去博物馆', 'outdoor'], ['一起烘焙', 'home'],
+        ['看演唱会', 'entertainment'], ['一起学做新菜', 'food'], ['去公园散步', 'outdoor'],
+        ['整理旧照片', 'home'], ['一起追剧', 'home'], ['去花市买花', 'outdoor'],
+        ['写下100个喜欢TA的理由', 'creative'], ['交换手机玩一天', 'creative'],
+        ['模仿第一次约会', 'creative']
+    ];
+    const insertIdea = db.prepare('INSERT INTO date_ideas (title, category, author) VALUES (?, ?, ?)');
+    const insertMany = db.transaction((ideas) => {
+        for (const [title, category] of ideas) {
+            insertIdea.run(title, category, 'system');
+        }
+    });
+    insertMany(defaultIdeas);
+}
 
 // 自动迁移：为已有数据库添加缺失的列
 try {

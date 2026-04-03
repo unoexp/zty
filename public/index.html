@@ -181,21 +181,51 @@
             </button>
         </div>
         <div class="bg-white/70 backdrop-blur-xl border-b border-white/40 shadow-sm">
-            <div class="container mx-auto px-4 py-3 flex justify-center items-center">
-                <ul class="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm">
-                    <li><a href="#memories" class="nav-link py-2 px-1">回忆</a></li>
-                    <li><a href="#photos" class="nav-link py-2 px-1">相册</a></li>
-                    <li><a href="#messages" class="nav-link py-2 px-1">悄悄话</a></li>
-                    <li><a href="/timeline" class="nav-link py-2 px-1">时间线</a></li>
-                    <li><a href="/map" class="nav-link py-2 px-1">足迹</a></li>
-                    <li><a href="/calendar" class="nav-link py-2 px-1">日历</a></li>
+            <div class="container mx-auto px-4 py-2.5 flex justify-center items-center">
+                <ul class="flex justify-center gap-x-6 text-sm">
+                    <li><a href="/" class="nav-link py-1.5 px-1 text-primary border-b-2 border-primary font-semibold">首页</a></li>
+                    <li><a href="/timeline" class="nav-link py-1.5 px-1">时间线</a></li>
+                    <li><a href="/map" class="nav-link py-1.5 px-1">足迹</a></li>
+                    <li><a href="/calendar" class="nav-link py-1.5 px-1">日历</a></li>
                 </ul>
+                <button id="dock-expand-btn" onclick="toggleDock()" aria-label="展开导航" title="展开页内导航">
+                    <i class="fa fa-angle-down"></i>
+                </button>
             </div>
+        </div>
+        <!-- 二级导航：页面内快速跳转 -->
+        <div id="dock-tray" class="dock-open">
+            <div id="dock-scroll">
+                <a href="#anniversary-section" class="dock-item" data-section="anniversary-section">
+                    <span class="dock-dot" style="background:#fb7185"></span>纪念日</a>
+                <a href="#daily-section" class="dock-item" data-section="daily-section">
+                    <span class="dock-dot" style="background:#a78bfa"></span>每日</a>
+                <a href="#memories" class="dock-item" data-section="memories">
+                    <span class="dock-dot" style="background:#60a5fa"></span>回忆</a>
+                <a href="#photos" class="dock-item" data-section="photos">
+                    <span class="dock-dot" style="background:#34d399"></span>相册</a>
+                <a href="#messages" class="dock-item" data-section="messages">
+                    <span class="dock-dot" style="background:#8b5cf6"></span>悄悄话</a>
+                <span class="dock-sep"></span>
+                <a href="#wishes-section" class="dock-item" data-section="wishes-section">
+                    <span class="dock-dot" style="background:#fbbf24"></span>愿望</a>
+                <a href="#tasks-section" class="dock-item" data-section="tasks-section">
+                    <span class="dock-dot" style="background:#4ade80"></span>任务</a>
+                <a href="#love-letters-section" class="dock-item" data-section="love-letters-section">
+                    <span class="dock-dot" style="background:#f472b6"></span>胶囊</a>
+                <a href="#date-ideas-section" class="dock-item" data-section="date-ideas-section">
+                    <span class="dock-dot" style="background:#fb923c"></span>约会</a>
+                <a href="#stats-section" class="dock-item" data-section="stats-section">
+                    <span class="dock-dot" style="background:#818cf8"></span>统计</a>
+            </div>
+            <button class="dock-close-btn" onclick="toggleDock()" aria-label="收起导航">
+                <i class="fa fa-angle-up"></i>
+            </button>
         </div>
     </nav>
 
     <!-- 主内容区 -->
-    <main class="container mx-auto px-4 pt-28 pb-16">
+    <main class="container mx-auto px-4 pt-32 pb-16">
 
         <!-- 纪念日倒计时区 -->
         <section id="anniversary-section" class="mb-12">
@@ -211,6 +241,10 @@
                     <span class="text-xl text-gray-500 font-light">天</span>
                 </div>
                 <p class="text-gray-400 text-xs mt-1 tracking-wide relative z-10">每一天，都因为有你而特别 <span class="heartbeat">💕</span></p>
+                <div id="milestone-info" class="mt-4 relative z-10 hidden">
+                    <p class="text-xs text-gray-400">下一个里程碑：<span id="next-milestone" class="font-semibold text-primary"></span> <span id="milestone-countdown" class="text-gray-500"></span></p>
+                </div>
+                <button onclick="showSetTogetherDate()" class="mt-3 text-xs text-gray-300 hover:text-gray-500 transition relative z-10"><i class="fa fa-pencil mr-1"></i>设置日期</button>
             </div>
             <div id="upcoming-anniversaries" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
             </div>
@@ -254,33 +288,7 @@
             </div>
         </section>
 
-        <!-- 快捷功能入口 -->
-        <div class="grid grid-cols-4 gap-4 mb-12">
-            <a href="/timeline" class="shortcut-card group">
-                <div class="shortcut-icon-wrap bg-blue-50 group-hover:bg-blue-100">
-                    <i class="fa fa-clock-o text-lg text-blue-500 shortcut-icon"></i>
-                </div>
-                <span class="text-xs text-gray-500 mt-2 font-medium">时间线</span>
-            </a>
-            <a href="/map" class="shortcut-card group">
-                <div class="shortcut-icon-wrap bg-rose-50 group-hover:bg-rose-100">
-                    <i class="fa fa-map-marker text-lg text-rose-500 shortcut-icon" style="animation-delay:0.5s"></i>
-                </div>
-                <span class="text-xs text-gray-500 mt-2 font-medium">足迹地图</span>
-            </a>
-            <a href="#wishes-section" class="shortcut-card group" id="wish-link">
-                <div class="shortcut-icon-wrap bg-amber-50 group-hover:bg-amber-100">
-                    <i class="fa fa-star text-lg text-amber-500 shortcut-icon" style="animation-delay:1s"></i>
-                </div>
-                <span class="text-xs text-gray-500 mt-2 font-medium">愿望清单</span>
-            </a>
-            <a href="game1.html" class="shortcut-card group">
-                <div class="shortcut-icon-wrap bg-violet-50 group-hover:bg-violet-100">
-                    <i class="fa fa-gamepad text-lg text-violet-500 shortcut-icon" style="animation-delay:1.5s"></i>
-                </div>
-                <span class="text-xs text-gray-500 mt-2 font-medium">小游戏</span>
-            </a>
-        </div>
+        <!-- 快捷入口已移至底部浮动导航 -->
 
         <!-- 回忆部分 -->
         <section id="memories" class="mb-20 scroll-mt-24">
@@ -531,7 +539,96 @@
                 <div class="text-center text-gray-400 py-8">加载中...</div>
             </div>
         </section>
+
+        <!-- 情书时光胶囊 -->
+        <section id="love-letters-section" class="mb-20 scroll-mt-24">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary section-title">时光胶囊</h2>
+                <button id="add-letter-btn" class="bg-primary text-white py-2.5 px-5 rounded-full flex items-center shadow-md ripple-btn text-sm font-medium">
+                    <i class="fa fa-envelope mr-2"></i>写一封信
+                </button>
+            </div>
+            <div id="letter-form-container" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-7 mb-6 hidden border border-white/50">
+                <h3 class="text-lg font-semibold mb-5 flex items-center gap-2"><span class="w-1.5 h-6 rounded-full bg-pink-400 inline-block"></span>写给TA的信</h3>
+                <form id="letter-form" class="space-y-4">
+                    <textarea id="letter-content" rows="5" placeholder="把想说的话写在这里，到了那天TA才能看到..." required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-300 focus:border-pink-400 transition bg-gray-50/50"></textarea>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500 mb-1.5">选择开封日期</label>
+                        <input type="date" id="letter-open-date" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-300 focus:border-pink-400 transition bg-gray-50/50">
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button type="button" id="cancel-letter" class="px-5 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition text-gray-500 text-sm">取消</button>
+                        <button type="submit" class="bg-gradient-to-r from-pink-400 to-rose-400 text-white px-6 py-2.5 rounded-xl transition shadow-md ripple-btn text-sm font-medium">封装信件</button>
+                    </div>
+                </form>
+            </div>
+            <div id="letters-list" class="space-y-4">
+                <div class="text-center text-gray-400 py-8">加载中...</div>
+            </div>
+        </section>
+
+        <!-- 随机约会建议 -->
+        <section id="date-ideas-section" class="mb-20 scroll-mt-24">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary section-title">约会灵感</h2>
+                <button id="add-idea-btn" class="bg-primary text-white py-2.5 px-5 rounded-full flex items-center shadow-md ripple-btn text-sm font-medium">
+                    <i class="fa fa-plus mr-2"></i>添加建议
+                </button>
+            </div>
+            <!-- 随机抽取区 -->
+            <div class="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl shadow-md p-8 mb-6 text-center border border-orange-100">
+                <div class="text-4xl mb-4" id="date-idea-emoji">🎲</div>
+                <p id="date-idea-result" class="text-xl font-semibold text-gray-700 mb-2">点击下方按钮，抽取今天的约会灵感</p>
+                <p id="date-idea-category" class="text-sm text-gray-400 mb-5"></p>
+                <div class="flex items-center justify-center gap-3 flex-wrap">
+                    <button onclick="randomDateIdea()" class="bg-gradient-to-r from-orange-400 to-amber-400 text-white px-8 py-3 rounded-full shadow-md hover:shadow-lg transition-all text-sm font-medium ripple-btn">
+                        <i class="fa fa-random mr-2"></i>随机抽取
+                    </button>
+                    <select id="idea-category-filter" onchange="randomDateIdea()" class="px-4 py-3 border border-orange-200 rounded-full text-sm bg-white">
+                        <option value="all">全部分类</option>
+                    </select>
+                </div>
+            </div>
+            <div id="idea-form-container" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-7 mb-6 hidden border border-white/50">
+                <form id="idea-form" class="space-y-4">
+                    <input type="text" id="idea-title" placeholder="输入约会建议..." required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary transition">
+                    <select id="idea-category" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <option value="home">居家</option>
+                        <option value="outdoor">户外</option>
+                        <option value="food">美食</option>
+                        <option value="entertainment">娱乐</option>
+                        <option value="creative">创意</option>
+                        <option value="other">其他</option>
+                    </select>
+                    <div class="flex justify-end gap-3">
+                        <button type="button" id="cancel-idea" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition">取消</button>
+                        <button type="submit" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition">添加</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- 关系数据统计 -->
+        <section id="stats-section" class="mb-20 scroll-mt-24">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary section-title">恋爱数据</h2>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="stats-grid">
+                <!-- 统计卡片由 JS 动态渲染 -->
+            </div>
+            <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md p-6" id="stats-detail">
+                <h3 class="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center"><i class="fa fa-bar-chart text-indigo-500"></i></span>
+                    月度趋势
+                </h3>
+                <div id="monthly-chart" class="space-y-2">
+                    <p class="text-gray-400 text-sm">加载中...</p>
+                </div>
+            </div>
+        </section>
     </main>
+
+    <!-- 二级导航栏已内嵌到顶部 nav 中 -->
 
     <script>
         if ('serviceWorker' in navigator) {

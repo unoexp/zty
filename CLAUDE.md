@@ -12,6 +12,8 @@ A couple's memory/diary web app (情侣回忆应用) with an admin backend. Buil
 - **Run production:** `npm start` (plain `node server.js`)
 - **Install dependencies:** `npm install`
 - **Migrate JSON data to SQLite:** `node scripts/migrate.js`
+- **Migrate mood notes from JSON:** `node scripts/migrate-notes.js`
+- **Deploy to production:** `bash scripts/deploy.sh` (one-click deploy, runs npm install + PM2 restart)
 
 No test framework or linter is configured.
 
@@ -32,6 +34,8 @@ No test framework or linter is configured.
 - `couple-tasks.js` — Couple task management with status tracking
 - `wishes.js` — Wish list with completion toggle
 - `daily-questions.js` — Daily Q&A between partners
+- `locations.js` — Footprint/location CRUD for the map view
+- `backup.js` — Admin data backup/export
 - `timeline.js` — Mixed timeline view (memories + photos + messages)
 
 **Utilities** in `utils/`:
@@ -70,7 +74,11 @@ Static files in `public/`, served via Express. No build step or bundler.
 - `timeline.html` — Timeline view of all content
 - `game1.html`, `game2.html`, `game3.html` — Mini games (self-contained)
 
+- `map.html` — Footprint map (Leaflet + AMap tiles)
+
 **Stack:** Tailwind CSS (CDN), Font Awesome icons, Google Fonts (Inter + Dancing Script). Vanilla JS.
+
+**PWA:** Service worker (`sw.js`) + `manifest.json` for offline caching and home screen install.
 
 ## Conventions
 
