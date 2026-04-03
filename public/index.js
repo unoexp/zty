@@ -1239,34 +1239,51 @@ function openPhotoViewer(index) {
     viewerImage.style.filter = 'blur(20px)';
     viewerImage.style.transform = 'scale(1.05)';
     viewerImage.style.transition = 'filter 0.5s ease, transform 0.5s ease';
-    viewerImage.src = thumbUrl;
     viewerImage.alt = photo.description || '照片大图';
 
-    // 后台加载原图，加载完成后切换并去掉模糊
-    const fullImg = new Image();
-    fullImg.onload = function() {
-        viewerImage.src = originalUrl;
-        viewerImage.style.filter = 'none';
-        viewerImage.style.transform = 'scale(1)';
-    };
-    fullImg.src = originalUrl;
-    
     document.getElementById('photo-caption').textContent = photo.description || '无描述';
     document.getElementById('photo-desc-text').textContent = photo.description || '暂无描述';
-    document.getElementById('photo-author-date').textContent = 
+    document.getElementById('photo-author-date').textContent =
         `${photo.author === 'his' ? '他' : '她'} · ${formatDate(photo.date)}`;
-    
+
     // 加载评论
     loadPhotoComments(photo.id);
-    
-    // 显示查看器
+
+    // 先让viewer透明，等缩略图加载后再淡入，避免白闪
+    viewer.style.opacity = '0';
+    viewer.style.transition = 'opacity 0.2s ease';
     viewer.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+
+    // 加载缩略图，完成后淡入viewer
+    const thumbImg = new Image();
+    thumbImg.onload = function() {
+        viewerImage.src = thumbUrl;
+        requestAnimationFrame(() => {
+            viewer.style.opacity = '1';
+        });
+
+        // 后台加载原图，加载完成后切换并去掉模糊
+        const fullImg = new Image();
+        fullImg.onload = function() {
+            viewerImage.src = originalUrl;
+            viewerImage.style.filter = 'none';
+            viewerImage.style.transform = 'scale(1)';
+        };
+        fullImg.src = originalUrl;
+    };
+    thumbImg.src = thumbUrl;
 }
 
 // 关闭图片查看器
 function closePhotoViewer() {
-    document.getElementById('photo-viewer').classList.add('hidden');
+    const viewer = document.getElementById('photo-viewer');
+    viewer.style.opacity = '0';
+    setTimeout(() => {
+        viewer.classList.add('hidden');
+        viewer.style.opacity = '';
+        viewer.style.transition = '';
+    }, 200);
     document.body.style.overflow = '';
 }
 
