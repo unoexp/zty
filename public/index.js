@@ -1236,41 +1236,38 @@ function openPhotoViewer(index) {
         : `${API_BASE_URL}${photo.thumbnailUrl || photo.url}`;
     const originalUrl = photo.url.startsWith('http') ? photo.url : `${API_BASE_URL}${photo.url}`;
 
-    // 预加载缩略图到离屏 Image，全部就绪后一次性显示
-    const thumbImg = new Image();
-    thumbImg.onload = function() {
-        viewerImage.onload = null;
-        viewerImage.style.transition = 'none';
-        viewerImage.style.filter = 'blur(20px)';
-        viewerImage.style.transform = 'scale(1.05)';
-        viewerImage.src = thumbUrl;
+    document.getElementById('photo-caption').textContent = photo.description || '无描述';
+    document.getElementById('photo-desc-text').textContent = photo.description || '暂无描述';
+    document.getElementById('photo-author-date').textContent =
+        `${photo.author === 'his' ? '他' : '她'} · ${formatDate(photo.date)}`;
+    loadPhotoComments(photo.id);
 
-        document.getElementById('photo-caption').textContent = photo.description || '无描述';
-        document.getElementById('photo-desc-text').textContent = photo.description || '暂无描述';
-        document.getElementById('photo-author-date').textContent =
-            `${photo.author === 'his' ? '他' : '她'} · ${formatDate(photo.date)}`;
-        loadPhotoComments(photo.id);
+    // 设置缩略图，用 decode() 确保完全解码后再显示 viewer
+    viewerImage.style.transition = 'none';
+    viewerImage.style.filter = 'blur(20px)';
+    viewerImage.style.transform = 'scale(1.05)';
+    viewerImage.src = thumbUrl;
 
-        // 等一帧确保 img 已绘制缩略图，再淡入 viewer
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                viewer.style.opacity = '1';
-                viewer.style.pointerEvents = 'auto';
-                document.body.style.overflow = 'hidden';
+    viewerImage.decode().then(() => {
+        viewer.style.opacity = '1';
+        viewer.style.pointerEvents = 'auto';
+        document.body.style.overflow = 'hidden';
 
-                // 开启过渡动画后加载原图
-                viewerImage.style.transition = 'filter 0.5s ease, transform 0.5s ease';
-                const fullImg = new Image();
-                fullImg.onload = function() {
-                    viewerImage.src = originalUrl;
-                    viewerImage.style.filter = 'none';
-                    viewerImage.style.transform = 'scale(1)';
-                };
-                fullImg.src = originalUrl;
-            });
-        });
-    };
-    thumbImg.src = thumbUrl;
+        // 缩略图已显示，后台加载原图
+        viewerImage.style.transition = 'filter 0.5s ease, transform 0.5s ease';
+        const fullImg = new Image();
+        fullImg.src = originalUrl;
+        fullImg.decode().then(() => {
+            viewerImage.src = originalUrl;
+            viewerImage.style.filter = 'none';
+            viewerImage.style.transform = 'scale(1)';
+        }).catch(() => {});
+    }).catch(() => {
+        // decode 失败时仍显示 viewer
+        viewer.style.opacity = '1';
+        viewer.style.pointerEvents = 'auto';
+        document.body.style.overflow = 'hidden';
+    });
 }
 
 // 关闭图片查看器
