@@ -1230,10 +1230,26 @@ function openPhotoViewer(index) {
     const viewer = document.getElementById('photo-viewer');
     const viewerImage = document.getElementById('viewer-image');
     
-    // 确保原图URL正确
+    // 先显示缩略图模糊作为 loading 占位
+    const thumbUrl = (photo.thumbnailUrl || photo.url).startsWith('http')
+        ? (photo.thumbnailUrl || photo.url)
+        : `${API_BASE_URL}${photo.thumbnailUrl || photo.url}`;
     const originalUrl = photo.url.startsWith('http') ? photo.url : `${API_BASE_URL}${photo.url}`;
-    viewerImage.src = originalUrl;
+
+    viewerImage.style.filter = 'blur(20px)';
+    viewerImage.style.transform = 'scale(1.05)';
+    viewerImage.style.transition = 'filter 0.5s ease, transform 0.5s ease';
+    viewerImage.src = thumbUrl;
     viewerImage.alt = photo.description || '照片大图';
+
+    // 后台加载原图，加载完成后切换并去掉模糊
+    const fullImg = new Image();
+    fullImg.onload = function() {
+        viewerImage.src = originalUrl;
+        viewerImage.style.filter = 'none';
+        viewerImage.style.transform = 'scale(1)';
+    };
+    fullImg.src = originalUrl;
     
     document.getElementById('photo-caption').textContent = photo.description || '无描述';
     document.getElementById('photo-desc-text').textContent = photo.description || '暂无描述';
@@ -1245,14 +1261,12 @@ function openPhotoViewer(index) {
     
     // 显示查看器
     viewer.classList.remove('hidden');
-    viewer.classList.add('fade-in');
     document.body.style.overflow = 'hidden';
 }
 
 // 关闭图片查看器
 function closePhotoViewer() {
     document.getElementById('photo-viewer').classList.add('hidden');
-    document.getElementById('photo-viewer').classList.remove('fade-in');
     document.body.style.overflow = '';
 }
 

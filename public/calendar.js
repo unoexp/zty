@@ -122,9 +122,8 @@ function initCalendarSelection() {
 function saveMoods(date, hisMood, herMood) {
     const moodData = {
         date: date,
-        hisMood: hisMood,
-        herMood: herMood,
-        updatedAt: new Date().toISOString()
+        his: { mood: hisMood },
+        her: { mood: herMood }
     };
     
     fetch(`${API_BASE_URL}/api/daily-moods`, {
@@ -643,7 +642,7 @@ function openDayModal(dateStr) {
     modalDate.textContent = date.toLocaleDateString('zh-CN', options);
     
     // 加载日期数据
-    const dayData = calendarData[dateStr] || {};
+    const dayData = (calendarData.byDate && calendarData.byDate[dateStr]) || calendarData.find(item => item.date === dateStr) || {};
     const userData = dayData[currentUser] || {};
     
     // 显示双方心情
@@ -849,19 +848,19 @@ function saveDiaryEntry() {
     const images = []; // 实际应用中这里会存储图片URL
     
     // 更新日历数据
-    if (!calendarData[dateStr]) {
-        calendarData[dateStr] = { his: {}, her: {} };
+    let dayEntry = calendarData.find(item => item.date === dateStr);
+    if (!dayEntry) {
+        dayEntry = { date: dateStr, his: {}, her: {} };
+        calendarData.push(dayEntry);
     }
-    
-    calendarData[dateStr][currentUser] = {
+
+    dayEntry[currentUser] = {
         mood: selectedMood,
         diary: diaryContent,
         images: images,
         updatedAt: new Date().toISOString()
     };
-    
-    // 保存到本地存储（实际应用中应该保存到服务器）
-    localStorage.setItem('calendarData', JSON.stringify(calendarData));
+    if (calendarData.byDate) calendarData.byDate[dateStr] = dayEntry;
     
     // 刷新日历
     renderCalendar();
@@ -949,17 +948,25 @@ async function loadCalendarData() {
     try {
         const response = await fetch('/api/daily-moods', { credentials: 'include' });
         const result = await response.json();
-        
-        if (result.success) {
-            calendarData = result.data; // 赋值给日历数据变量
-            renderCalendar();    
+
+        if (result.success && Array.isArray(result.data)) {
+            // API返回数组，转为以日期为key的对象，同时保留数组用于 find
+            calendarData = result.data;
+            // 给数组添加按日期索引的能力
+            calendarData.byDate = {};
+            result.data.forEach(item => {
+                calendarData.byDate[item.date] = item;
+            });
+            renderCalendar();
         } else {
             console.error('加载日历数据失败:', result.message);
-            calendarData = []; // 失败时使用默认空数组
+            calendarData = [];
+            calendarData.byDate = {};
         }
     } catch (error) {
         console.error('请求日历数据出错:', error);
-        calendarData = []; // 异常时使用默认空数组
+        calendarData = [];
+        calendarData.byDate = {};
     }
 }
 // 格式化日期
