@@ -53,22 +53,29 @@
                 display: grid;
                 grid-template-columns: repeat(7, 1fr);
             }
-            .mood-icon:hover {
-                transform: scale(1.1);
-            }
             .day-cell {
                 aspect-ratio: 1;
                 min-height: 30px;
                 overflow: hidden;
                 display: flex;
                 flex-direction: column;
+                border-radius: 12px;
+                background: white;
+                border: 1px solid #f0f0f0;
+                padding: 4px;
+                transition: all 0.2s ease;
+                cursor: pointer;
+            }
+            .day-cell:hover {
+                box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+                transform: translateY(-1px);
             }
             .day-cell .day-number {
                 font-size: clamp(10px, 1.5vw, 14px);
                 line-height: 1;
                 flex-shrink: 0;
+                color: #555;
             }
-            /* 特殊日期标记文字 */
             .day-cell .special-marker {
                 font-size: clamp(6px, 1vw, 10px);
                 line-height: 1;
@@ -79,13 +86,16 @@
             }
             .day-cell.selected {
                 border-color: var(--primary-color);
-                background-color: rgba(79, 158, 253, 0.1);
+                background: linear-gradient(135deg, rgba(79,158,253,0.05), rgba(255,117,160,0.05));
+                box-shadow: 0 0 0 2px var(--primary-color);
             }
             .half-cell {
                 position: relative;
                 flex: 1;
                 min-height: 0;
                 width: 100%;
+                border-radius: 0 0 8px 8px;
+                overflow: hidden;
             }
             .half-left, .half-right {
                 position: absolute;
@@ -95,23 +105,29 @@
             }
             .half-left {
                 left: 0;
-                border-radius: 0 0 0 4px;
             }
             .half-right {
                 right: 0;
-                border-radius: 0 0 4px 0;
             }
             .half-left::after {
                 content: '';
                 position: absolute;
-                top: 0;
+                top: 15%;
                 right: 0;
-                height: 100%;
+                height: 70%;
                 width: 1px;
-                background-color: rgba(0,0,0,0.1);
+                background: rgba(255,255,255,0.4);
             }
             .mood-icon {
                 font-size: clamp(8px, 1.2vw, 14px) !important;
+                transition: transform 0.2s ease;
+            }
+            .mood-icon:hover {
+                transform: scale(1.15);
+            }
+            .empty-cell {
+                border-radius: 12px;
+                background: #fafafa;
             }
             /* 心情容器整体样式 */
             #his-mood-content, #her-mood-content {
@@ -148,7 +164,7 @@
         }
     </style>
 </head>
-<body class="font-inter text-gray-800 min-h-screen bg-gray-50">
+<body class="font-inter text-gray-800 min-h-screen" style="background: linear-gradient(135deg, #fdf2f8 0%, #f0f9ff 50%, #faf5ff 100%)">
     <!-- 导航栏 -->
     <nav class="fixed top-0 left-0 right-0 z-40 transition-all duration-300">
         <div id="user-indicator" class="fixed top-0 left-0 right-0 z-50 py-2.5 px-4 font-medium text-white relative overflow-hidden flex items-center justify-center">
@@ -170,24 +186,24 @@
     <!-- 主内容区 -->
     <main class="container mx-auto px-4 pt-28 pb-16">
         <!-- 日历标题和控制 -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8">
-            <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary mb-4 md:mb-0">恋爱日历</h2>
-            <div class="flex items-center gap-4">
-                <button id="prev-month" class="p-2 rounded-full hover:bg-gray-100 transition">
-                    <i class="fa fa-angle-left text-gray-700"></i>
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+            <h2 class="text-[clamp(1.6rem,3.5vw,2.2rem)] font-dancing text-primary mb-3 md:mb-0">恋爱日历</h2>
+            <div class="flex items-center gap-2 bg-white/80 rounded-2xl px-4 py-2 shadow-sm">
+                <button id="prev-month" class="w-8 h-8 rounded-full hover:bg-gray-100 transition flex items-center justify-center">
+                    <i class="fa fa-angle-left text-gray-500"></i>
                 </button>
-                <h3 id="current-month" class="text-xl font-medium"></h3>
-                <button id="next-month" class="p-2 rounded-full hover:bg-gray-100 transition">
-                    <i class="fa fa-angle-right text-gray-700"></i>
+                <h3 id="current-month" class="text-base font-medium min-w-[100px] text-center"></h3>
+                <button id="next-month" class="w-8 h-8 rounded-full hover:bg-gray-100 transition flex items-center justify-center">
+                    <i class="fa fa-angle-right text-gray-500"></i>
                 </button>
-                <button id="today-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition">
+                <button id="today-btn" class="bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm hover:bg-primary/20 transition ml-1">
                     今天
                 </button>
             </div>
         </div>
         
         <!-- 日历星期标题 -->
-        <div class="calendar-grid gap-1 mb-1 font-medium text-sm text-gray-500">
+        <div class="calendar-grid gap-2 mb-2 font-medium text-xs text-gray-400 uppercase tracking-wider">
             <div class="text-center py-2">日</div>
             <div class="text-center py-2">一</div>
             <div class="text-center py-2">二</div>
@@ -196,24 +212,24 @@
             <div class="text-center py-2">五</div>
             <div class="text-center py-2">六</div>
         </div>
-        
+
         <!-- 日历主体 -->
-        <div id="calendar-grid" class="calendar-grid gap-1">
+        <div id="calendar-grid" class="calendar-grid gap-2">
             <!-- 日历格子会通过JS动态生成 -->
         </div>
         <div class="mt-6 text-center">
-        <button id="publish-mood-btn" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition shadow-md text-lg">
+        <button id="publish-mood-btn" class="bg-gradient-to-r from-pink-400 to-primary text-white px-8 py-3 rounded-full hover:shadow-lg transition-all hover:scale-105 text-base font-medium">
             <i class="fa fa-pencil mr-2"></i>发布今日心情
         </button>
         </div>
         
         <!-- 日期详情模块 -->
         <div id="date-details" class="hidden mt-8">
-            <h2 id="details-date" class="text-2xl font-bold mb-6"></h2>
-            
+            <h2 id="details-date" class="text-xl font-bold mb-5 text-gray-700"></h2>
+
             <!-- 心情和图片部分 -->
-            <div class="mood-section bg-white rounded-xl shadow-md p-6 mb-8">
-                <h3 class="text-xl font-semibold mb-4">今日心情</h3>
+            <div class="mood-section bg-white rounded-2xl shadow-sm p-5 mb-6 border border-gray-100">
+                <h3 class="text-lg font-semibold mb-4 text-gray-600">今日心情</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- 他的心情 -->
                     <div class="his-mood">
@@ -232,16 +248,16 @@
             </div>
             
             <!-- 回忆部分 -->
-            <div class="memories-section mb-8">
-                <h3 class="text-xl font-semibold mb-4">今日回忆</h3>
+            <div class="memories-section mb-6">
+                <h3 class="text-lg font-semibold mb-4 text-gray-600">今日回忆</h3>
                 <div id="date-memories-list" class="space-y-4">
                     <!-- 回忆内容将通过JS动态加载 -->
                 </div>
             </div>
             
             <!-- 照片部分 -->
-            <div class="photos-section mb-8">
-                <h3 class="text-xl font-semibold mb-4">今日照片</h3>
+            <div class="photos-section mb-6">
+                <h3 class="text-lg font-semibold mb-4 text-gray-600">今日照片</h3>
                 <div id="date-photos-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <!-- 照片内容将通过JS动态加载 -->
                 </div>
@@ -292,7 +308,7 @@
             
             <!-- 悄悄话部分 -->
             <div class="messages-section">
-                <h3 class="text-xl font-semibold mb-4">今日悄悄话</h3>
+                <h3 class="text-lg font-semibold mb-4 text-gray-600">今日悄悄话</h3>
                 <div id="date-messages-list" class="space-y-4">
                     <!-- 悄悄话内容将通过JS动态加载 -->
                 </div>
@@ -301,13 +317,13 @@
     </main>
     
     <div id="day-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" id="modal-backdrop"></div>
-    <div class="relative z-10 bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div class="absolute inset-0 bg-black/40" id="modal-backdrop"></div>
+    <div class="relative z-10 bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto mx-4">
         <div class="p-6">
-        <div class="flex justify-between items-center mb-4">
-            <h3 id="modal-date" class="text-xl font-medium"></h3>
-            <button id="close-modal" class="text-gray-500 hover:text-gray-700">
-            <i class="fa fa-times"></i>
+        <div class="flex justify-between items-center mb-5">
+            <h3 id="modal-date" class="text-lg font-semibold text-gray-700"></h3>
+            <button id="close-modal" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition">
+            <i class="fa fa-times text-gray-500 text-sm"></i>
             </button>
         </div>
         <div class="flex flex-wrap gap-x-4 gap-y-3" id="mood-selector"
@@ -365,17 +381,16 @@
         <!-- 心情备注 -->
         <div class="mb-6">
             <label for="mood-note" class="block text-sm font-medium mb-2">心情备注</label>
-            <textarea id="mood-note" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="描述一下今天的心情..."></textarea>
+            <textarea id="mood-note" rows="3" class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-gray-50/50 text-sm" placeholder="描述一下今天的心情..."></textarea>
         </div>
         
         <!-- 图片上传 -->
         <div class="mb-6">
             <label class="block text-sm font-medium mb-2">添加图片</label>
-            <label for="mood-image-upload" class="flex items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg p-6 hover:bg-gray-50 transition cursor-pointer">
+            <label for="mood-image-upload" class="flex items-center justify-center w-full border-2 border-dashed border-gray-200 rounded-2xl p-5 hover:bg-gray-50/50 hover:border-primary/30 transition cursor-pointer">
             <div class="text-center">
-                <i class="fa fa-upload text-gray-400 mb-2"></i>
-                <p class="text-sm text-gray-500">点击或拖拽图片到这里</p>
-                <p class="text-xs text-gray-400 mt-1">支持JPG、PNG格式</p>
+                <i class="fa fa-camera text-gray-300 text-2xl mb-2"></i>
+                <p class="text-xs text-gray-400">点击上传图片</p>
             </div>
             </label>
             <input type="file" id="mood-image-upload" accept="image/*" class="hidden">
@@ -383,7 +398,7 @@
         </div>
         
         <div class="flex justify-end">
-            <button id="save-mood-btn" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 transition">
+            <button id="save-mood-btn" class="bg-gradient-to-r from-pink-400 to-primary text-white px-6 py-2.5 rounded-full hover:shadow-md transition-all hover:scale-105 text-sm font-medium">
             保存心情
             </button>
         </div>

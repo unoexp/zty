@@ -535,7 +535,7 @@ function renderCalendar() {
     // 添加上个月的占位符
     for (let i = 0; i < firstDay; i++) {
         const emptyCell = document.createElement('div');
-        emptyCell.className = 'bg-gray-50 rounded-lg border border-gray-100';
+        emptyCell.className = 'empty-cell';
         calendarGrid.appendChild(emptyCell);
     }
     
@@ -546,7 +546,7 @@ function renderCalendar() {
         const dayCell = document.createElement('div');
 
         // 1. 初始化格子基础样式
-        let cellClasses = "day-cell rounded-lg border border-gray-100 p-1 relative hover:shadow-md transition cursor-pointer";
+        let cellClasses = "day-cell";
         // 2. 判断当前日期是否为特殊日期
         const specialDate = specialDates.find(item => {
             // 只对比 月份和日期（忽略年份，实现每年重复标记）
