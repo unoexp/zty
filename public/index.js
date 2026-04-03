@@ -1242,18 +1242,21 @@ function openPhotoViewer(index) {
         `${photo.author === 'his' ? '他' : '她'} · ${formatDate(photo.date)}`;
     loadPhotoComments(photo.id);
 
-    // 预加载缩略图，decode 确保解码完成后直接显示（不做 opacity 过渡，避免 backdrop-blur 闪烁）
+    // 预加载缩略图，decode 确保完全解码后再显示
     const thumbImg = new Image();
     thumbImg.src = thumbUrl;
+
+    function showViewer() {
+        viewer.style.visibility = 'visible';
+        document.body.style.overflow = 'hidden';
+    }
+
     thumbImg.decode().then(() => {
         viewerImage.style.transition = 'none';
         viewerImage.style.filter = 'blur(20px)';
         viewerImage.style.transform = 'scale(1.05)';
         viewerImage.src = thumbUrl;
-        // 直接显示，不做过渡
-        viewer.style.opacity = '1';
-        viewer.style.pointerEvents = 'auto';
-        document.body.style.overflow = 'hidden';
+        showViewer();
 
         // 后台加载原图
         const fullImg = new Image();
@@ -1270,17 +1273,14 @@ function openPhotoViewer(index) {
         });
     }).catch(() => {
         viewerImage.src = thumbUrl;
-        viewer.style.opacity = '1';
-        viewer.style.pointerEvents = 'auto';
-        document.body.style.overflow = 'hidden';
+        showViewer();
     });
 }
 
 // 关闭图片查看器
 function closePhotoViewer() {
     const viewer = document.getElementById('photo-viewer');
-    viewer.style.opacity = '0';
-    viewer.style.pointerEvents = 'none';
+    viewer.style.visibility = 'hidden';
     document.getElementById('viewer-image').removeAttribute('src');
     document.body.style.overflow = '';
 }

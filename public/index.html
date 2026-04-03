@@ -393,45 +393,39 @@
     </section>
 
     <!-- 图片查看器模态框 - 增强文字展示 -->
-    <div id="photo-viewer" class="fixed inset-0 z-50 flex items-center justify-center" style="opacity:0;pointer-events:none">
-        <div class="absolute inset-0 bg-black/80" id="photo-viewer-backdrop"></div>
-        <div class="relative z-10 max-w-5xl w-full max-h-[90vh] flex flex-col md:flex-row bg-white rounded-2xl overflow-hidden shadow-2xl mx-4">
+    <div id="photo-viewer" class="fixed inset-0 z-50" style="visibility:hidden">
+        <!-- 暗色背景 -->
+        <div class="absolute inset-0 bg-black/90" id="photo-viewer-backdrop"></div>
+        <!-- 关闭按钮 -->
+        <button id="close-viewer" class="absolute top-4 right-4 z-30 w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition">
+            <i class="fa fa-times text-lg"></i>
+        </button>
+        <!-- 左右切换按钮 -->
+        <button id="prev-photo" class="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition">
+            <i class="fa fa-angle-left text-xl"></i>
+        </button>
+        <button id="next-photo" class="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition">
+            <i class="fa fa-angle-right text-xl"></i>
+        </button>
+        <!-- 主内容区 -->
+        <div class="relative z-10 w-full h-full flex flex-col">
             <!-- 图片展示区 -->
-            <div class="md:w-2/3 bg-black flex items-center justify-center relative">
-                <button id="prev-photo" class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 text-white flex items-center justify-center hover:bg-black/50 transition">
-                    <i class="fa fa-angle-left text-xl"></i>
-                </button>
-                <img id="viewer-image" src="" alt="照片大图" class="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain">
-                <button id="next-photo" class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 text-white flex items-center justify-center hover:bg-black/50 transition">
-                    <i class="fa fa-angle-right text-xl"></i>
-                </button>
-                <button id="close-viewer" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/30 text-white flex items-center justify-center hover:bg-black/50 transition">
-                    <i class="fa fa-times"></i>
-                </button>
-                <div class="absolute bottom-4 left-0 right-0 text-center text-white text-shadow p-4">
-                    <p id="photo-caption" class="text-sm md:text-base mb-1"></p>
-                    <p id="photo-author-date" class="text-xs opacity-80"></p>
-                </div>
+            <div class="flex-1 flex items-center justify-center min-h-0 px-14 py-12">
+                <img id="viewer-image" src="" alt="照片大图" class="max-w-full max-h-full object-contain">
             </div>
-            
-            <!-- 评论和描述区 -->
-            <div class="md:w-1/3 p-4 overflow-y-auto max-h-[30vh] md:max-h-[80vh]">
-                <!-- 照片描述展示 -->
-                <div id="photo-description-display" class="mb-6 p-3 bg-gray-50 rounded-lg">
-                    <h4 class="text-sm font-medium text-gray-500 mb-1">照片描述</h4>
-                    <p id="photo-desc-text" class="text-sm"></p>
+            <!-- 底部信息栏 -->
+            <div class="flex-shrink-0 bg-black/60 text-white px-4 py-3">
+                <div class="max-w-3xl mx-auto">
+                    <p id="photo-caption" class="text-sm mb-0.5"></p>
+                    <p id="photo-author-date" class="text-xs opacity-70 mb-2"></p>
+                    <p id="photo-desc-text" class="text-xs opacity-80 mb-2"></p>
+                    <!-- 评论区 -->
+                    <div id="photo-comments" class="space-y-2 mb-2 max-h-[20vh] overflow-y-auto"></div>
+                    <form id="add-comment-form" class="flex gap-2">
+                        <input type="text" id="comment-content" placeholder="添加评论..." class="flex-1 px-3 py-1.5 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:border-white/40">
+                        <button type="submit" class="bg-white/20 text-white px-3 py-1.5 rounded-lg hover:bg-white/30 transition text-sm">发送</button>
+                    </form>
                 </div>
-                
-                <h3 class="text-lg font-medium mb-4">评论</h3>
-                <div id="photo-comments" class="space-y-4 mb-6">
-                    <!-- 评论会通过JS动态添加 -->
-                </div>
-                
-                <!-- 添加评论表单 -->
-                <form id="add-comment-form" class="flex gap-2">
-                    <input type="text" id="comment-content" placeholder="添加评论..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition">
-                    <button type="submit" class="bg-primary text-white px-3 py-2 rounded-lg hover:bg-primary/90 transition">发送</button>
-                </form>
             </div>
         </div>
     </div>
