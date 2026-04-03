@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 我们的故事</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        his: { primary: '#4F9EFD', light: '#E8F0FF' },
+                        her: { primary: '#FF75A0', light: '#FFEFF3' }
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                        dancing: ['"Dancing Script"', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .heart-float {
+            animation: heartFloat 3s ease-in-out infinite;
+        }
+        @keyframes heartFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-8px) rotate(-3deg); }
+            50% { transform: translateY(-12px) rotate(0deg); }
+            75% { transform: translateY(-8px) rotate(3deg); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes sparkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.5); }
+        }
+        .card-hover {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        }
+        .login-appear { animation: fadeInUp 0.6s ease-out forwards; }
+        .login-appear-delay { animation: fadeInUp 0.6s ease-out 0.15s forwards; opacity: 0; }
+        .login-appear-delay2 { animation: fadeInUp 0.6s ease-out 0.3s forwards; opacity: 0; }
+
+        /* 浮动爱心背景 */
+        .floating-hearts {
+            position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0;
+        }
+        .floating-hearts span {
+            position: absolute;
+            font-size: 20px;
+            opacity: 0.08;
+            animation: floatHeart linear infinite;
+        }
+        @keyframes floatHeart {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.08; }
+            90% { opacity: 0.08; }
+            100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="font-inter min-h-screen flex items-center justify-center p-4 relative" style="background: linear-gradient(135deg, #fdf2f8 0%, #ede9fe 25%, #dbeafe 50%, #fce7f3 75%, #fff1f2 100%);">
+    <!-- 浮动爱心背景 -->
+    <div class="floating-hearts" id="floating-hearts"></div>
+    <!-- 首次设置页面 -->
+    <div id="setup-page" class="hidden w-full max-w-md">
+        <div class="text-center mb-8">
+            <div class="text-5xl heart-float mb-4">💕</div>
+            <h1 class="text-3xl font-dancing text-gray-800 mb-2">初始化账号</h1>
+            <p class="text-gray-500 text-sm">第一次使用，请为你们设置登录密码</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+            <form id="setup-form" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-his-primary mb-1">他的密码</label>
+                    <input type="password" id="setup-his-password" minlength="6" required
+                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-his-primary focus:border-his-primary transition"
+                        placeholder="设置他的登录密码（至少6位）">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-her-primary mb-1">她的密码</label>
+                    <input type="password" id="setup-her-password" minlength="6" required
+                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-her-primary focus:border-her-primary transition"
+                        placeholder="设置她的登录密码（至少6位）">
+                </div>
+                <div id="setup-error" class="hidden text-red-500 text-sm"></div>
+                <button type="submit"
+                    class="w-full py-3 bg-gradient-to-r from-his-primary to-her-primary text-white rounded-xl font-medium hover:opacity-90 transition">
+                    开始我们的故事
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 登录页面 -->
+    <div id="login-page" class="w-full max-w-lg relative z-10">
+        <div class="text-center mb-8 login-appear">
+            <div class="text-6xl heart-float mb-4">💕</div>
+            <h1 class="text-4xl font-dancing text-gray-800 mb-2">我们的故事</h1>
+            <p class="text-gray-400 text-sm tracking-wide">选择你的身份，进入属于我们的世界</p>
+        </div>
+        <div class="grid grid-cols-2 gap-5 login-appear-delay">
+            <!-- 他的入口 -->
+            <div class="card-hover bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-7 cursor-pointer border-2 border-transparent hover:border-his-primary relative overflow-hidden"
+                onclick="selectUser('his')">
+                <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-400 opacity-0 transition-opacity duration-300" style="opacity:0"></div>
+                <div class="text-center">
+                    <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center shadow-inner">
+                        <span class="text-3xl">👦</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">他</h3>
+                    <p class="text-xs text-gray-400">His perspective</p>
+                </div>
+            </div>
+            <!-- 她的入口 -->
+            <div class="card-hover bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-7 cursor-pointer border-2 border-transparent hover:border-her-primary relative overflow-hidden"
+                onclick="selectUser('her')">
+                <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-pink-400 to-rose-400 opacity-0 transition-opacity duration-300" style="opacity:0"></div>
+                <div class="text-center">
+                    <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-pink-50 to-rose-100 flex items-center justify-center shadow-inner">
+                        <span class="text-3xl">👧</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">她</h3>
+                    <p class="text-xs text-gray-400">Her perspective</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 密码输入 -->
+        <div id="password-section" class="hidden mt-6">
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <h3 id="password-label" class="text-lg font-medium mb-4 text-center"></h3>
+                <form id="login-form" class="space-y-4">
+                    <input type="password" id="login-password" required
+                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:border-transparent transition"
+                        placeholder="请输入密码">
+                    <div id="login-error" class="hidden text-red-500 text-sm"></div>
+                    <button type="submit" id="login-btn"
+                        class="w-full py-3 text-white rounded-xl font-medium hover:opacity-90 transition">
+                        登录
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedUser = null;
+
+        // 检查是否已登录
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/auth/me', { credentials: 'include' });
+                if (res.ok) {
+                    window.location.href = '/';
+                    return;
+                }
+            } catch (e) {}
+
+            // 检查是否需要初始化
+            try {
+                const res = await fetch('/api/auth/check-setup');
+                const data = await res.json();
+                if (!data.initialized) {
+                    document.getElementById('login-page').classList.add('hidden');
+                    document.getElementById('setup-page').classList.remove('hidden');
+                }
+            } catch (e) {}
+        }
+
+        function selectUser(user) {
+            selectedUser = user;
+            const section = document.getElementById('password-section');
+            const label = document.getElementById('password-label');
+            const btn = document.getElementById('login-btn');
+            const input = document.getElementById('login-password');
+
+            section.classList.remove('hidden');
+            section.style.animation = 'fadeInUp 0.4s ease-out forwards';
+            label.textContent = user === 'his' ? '💙 输入他的密码' : '💗 输入她的密码';
+            btn.style.background = user === 'his'
+                ? 'linear-gradient(135deg, #4F9EFD, #7B68EE)'
+                : 'linear-gradient(135deg, #FF75A0, #FF6B9D)';
+            input.style.setProperty('--tw-ring-color', user === 'his' ? '#4F9EFD' : '#FF75A0');
+            input.focus();
+
+            // 高亮选中的卡片
+            document.querySelectorAll('.card-hover').forEach((card, i) => {
+                const isSelected = (i === 0 && user === 'his') || (i === 1 && user === 'her');
+                card.querySelector('div[style]')?.style.setProperty('opacity', isSelected ? '1' : '0');
+                card.style.borderColor = isSelected ? (user === 'his' ? '#4F9EFD' : '#FF75A0') : 'transparent';
+            });
+
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: selectedUser, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.href = '/';
+                } else {
+                    errorEl.textContent = data.message;
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorEl.textContent = '网络错误，请重试';
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('setup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const hisPassword = document.getElementById('setup-his-password').value;
+            const herPassword = document.getElementById('setup-her-password').value;
+            const errorEl = document.getElementById('setup-error');
+
+            try {
+                const res = await fetch('/api/auth/setup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hisPassword, herPassword })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    errorEl.textContent = data.message;
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorEl.textContent = '网络错误，请重试';
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        checkAuth();
+
+        // 浮动爱心背景
+        (function() {
+            const container = document.getElementById('floating-hearts');
+            const hearts = ['💕', '💗', '💖', '💘', '❤️', '🤍', '💜', '🩷', '🩵'];
+            for (let i = 0; i < 15; i++) {
+                const span = document.createElement('span');
+                span.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+                span.style.left = Math.random() * 100 + '%';
+                span.style.fontSize = (12 + Math.random() * 18) + 'px';
+                span.style.animationDuration = (8 + Math.random() * 12) + 's';
+                span.style.animationDelay = (Math.random() * 10) + 's';
+                container.appendChild(span);
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -11,36 +11,74 @@ A couple's memory/diary web app (情侣回忆应用) with an admin backend. Buil
 - **Run dev server:** `npm run dev` (uses nodemon, auto-restarts on changes)
 - **Run production:** `npm start` (plain `node server.js`)
 - **Install dependencies:** `npm install`
+- **Migrate JSON data to SQLite:** `node scripts/migrate.js`
 
 No test framework or linter is configured.
 
 ## Architecture
 
-**Single-file backend:** `server.js` contains the entire Express API server — all routes, middleware, file upload handling (multer + sharp for thumbnails), and JSON file-based data persistence.
+### Backend
 
-**Data storage:** JSON files in `data/` directory (gitignored). Data files: `memories.json`, `photos.json`, `messages.json`, `admin.json`, `comments.json`, `daily-moods.json`. Read/write via `readData()`/`writeData()` helper functions.
+**Entry point:** `server.js` — Express app setup, middleware, route mounting, static file serving.
 
-**File uploads:** Images stored in `uploads/` with thumbnails in `uploads/thumbnails/`. Max 50MB per file. Allowed types: JPEG, PNG, GIF, WebP.
+**Modular routes** in `routes/`:
+- `auth.js` — JWT registration, login, logout, `/api/auth/me`, `/api/auth/setup`
+- `admin.js` — Admin login (bcrypt), password change
+- `memories.js` — Memory CRUD + comments + visibility + date query
+- `photos.js` — Photo upload (single + batch with thumbnails), CRUD, comments
+- `messages.js` — Private messages ("悄悄话") CRUD + blur toggle
+- `moods.js` — Daily mood entries with optional image uploads
+- `anniversaries.js` — Anniversary/countdown CRUD + upcoming calculation
+- `couple-tasks.js` — Couple task management with status tracking
+- `wishes.js` — Wish list with completion toggle
+- `daily-questions.js` — Daily Q&A between partners
+- `timeline.js` — Mixed timeline view (memories + photos + messages)
 
-**Frontend:** Static files in `public/`, served directly by Express. No build step or bundler.
-- `index.html` / `index.js` / `styles.css` — Main couple-facing app (memories, photos, messages)
-- `admin.html` — Admin panel (password-protected, default password in `admin.json`)
-- `calendar.html` / `calendar.js` — Daily mood calendar feature
-- `game1.html`, `game2.html`, `game3.html` — Mini games
+**Utilities** in `utils/`:
+- `db.js` — SQLite database (better-sqlite3) initialization, all CREATE TABLE statements
+- `data.js` — Legacy JSON file read/write helpers (for backward compatibility)
+- `upload.js` — Multer config, sharp thumbnail generation, file deletion
 
-**Key API resource groups:**
-- `/api/memories` — Memory entries (CRUD + comments + visibility toggle)
-- `/api/photos` — Photo uploads with thumbnails (single + batch upload, CRUD, comments)
-- `/api/messages` — Private messages ("悄悄话")
-- `/api/daily-moods` — Daily mood entries with optional image uploads
-- `/api/admin` — Login and password management
-- `*-query` endpoints — Date-filtered queries for memories, photos, messages
+**Middleware** in `middleware/`:
+- `auth.js` — JWT authentication (`authenticateUser`, `authenticateAdmin`, `optionalAuth`, `signToken`)
 
-**Frontend stack:** Tailwind CSS (via CDN), Font Awesome icons, Google Fonts (Inter + Dancing Script). No framework — vanilla JS with inline Tailwind config.
+### Data Storage
+
+**Primary:** SQLite database at `data/app.db` (WAL mode enabled). Tables: users, memories, photos, messages, comments (polymorphic), daily_moods, anniversaries, tasks, wishes, daily_questions, locations.
+
+**File uploads:** Images in `uploads/`, thumbnails in `uploads/thumbnails/`. Max 50MB, UUID filenames, `thumbnail-` prefix for thumbnails (200x200 via sharp).
+
+**Migration:** `scripts/migrate.js` migrates from legacy JSON files to SQLite. JSON files in `data/` are kept as backup.
+
+### Authentication
+
+- JWT tokens stored in httpOnly cookies
+- Users: `his` and `her` (two partner accounts) + `admin`
+- First-time setup via `/api/auth/setup` (creates both accounts)
+- Login page at `/login` (`public/login.html`)
+- Passwords hashed with bcrypt (cost 10)
+- `authenticateUser` middleware on all write endpoints; `optionalAuth` on reads
+- Backward compatible: falls back to `?user=his/her` URL params if no JWT cookie
+
+### Frontend
+
+Static files in `public/`, served via Express. No build step or bundler.
+- `login.html` — Authentication page (his/her selection + password)
+- `index.html` / `index.js` / `styles.css` — Main app (memories, photos, messages)
+- `admin.html` — Admin panel (password-protected)
+- `calendar.html` / `calendar.js` — Daily mood calendar
+- `timeline.html` — Timeline view of all content
+- `game1.html`, `game2.html`, `game3.html` — Mini games (self-contained)
+
+**Stack:** Tailwind CSS (CDN), Font Awesome icons, Google Fonts (Inter + Dancing Script). Vanilla JS.
 
 ## Conventions
 
-- Entity IDs use `Date.now()` for memories/messages, `uuid` for photos
-- Author field uses `'his'` / `'her'` to distinguish the two users
-- All API responses follow `{ success: boolean, ... }` pattern (with some inconsistency in older routes)
+- Entity IDs: `Date.now()` for memories/messages, `uuid` for photos
+- Author field: `'his'` / `'her'`
+- API responses: `{ success: boolean, data?, message? }`
+- SQLite columns use snake_case; API responses map to camelCase where needed (e.g. `thumbnail_url` → `thumbnailUrl`, `should_blur` → `shouldBlur`)
 - Port configurable via `PORT` env var, defaults to 3000
+- JWT secret via `JWT_SECRET` env var, has a default for dev (change in production)
+- Comments table is polymorphic: `entity_type` ('memory'|'photo') + `entity_id`
+- All fetch calls include `credentials: 'include'` for cookie-based auth

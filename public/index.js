@@ -16,6 +16,12 @@ const maxVisibleComments = 3;
 const API_BASE_URL = '';
 
 // XSS 防护：转义 HTML 特殊字符
+// 切换用户（登出后跳转登录页）
+async function switchUser() {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    window.location.href = '/login';
+}
+
 function escapeHtml(str) {
     if (!str) return '';
     const div = document.createElement('div');
@@ -24,47 +30,381 @@ function escapeHtml(str) {
 }
 
 // DOM加载完成后初始化
-document.addEventListener('DOMContentLoaded', function() {
-    // 解析URL参数确定用户视角
-    const params = new URLSearchParams(window.location.search);
-    const user = params.get('user');
-    
-    if (user === 'his' || user === 'her') {
-        currentUser = user;
-        initUserInterface();
-    } else {
-        // 默认重定向到his视角
-        window.location.search = 'user=his';
+document.addEventListener('DOMContentLoaded', async function() {
+    // 通过JWT认证获取当前用户身份
+    try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!res.ok) {
+            // 未登录，兼容旧的URL参数模式
+            const params = new URLSearchParams(window.location.search);
+            const user = params.get('user');
+            if (user === 'his' || user === 'her') {
+                currentUser = user;
+            } else {
+                window.location.href = '/login';
+                return;
+            }
+        } else {
+            const data = await res.json();
+            currentUser = data.user.username;
+        }
+    } catch (e) {
+        // 网络错误时降级到URL参数
+        const params = new URLSearchParams(window.location.search);
+        const user = params.get('user');
+        if (user === 'his' || user === 'her') {
+            currentUser = user;
+        } else {
+            window.location.href = '/login';
+            return;
+        }
     }
-    
+
+    initUserInterface();
     // 初始化事件监听
     initEventListeners();
-    
+    initNewFeatureListeners();
+
     // 加载数据
     loadAllData();
+    loadNewFeatures();
 });
 // 初始化用户界面
 function initUserInterface() {
     const userText = document.getElementById('user-text');
     const userIndicator = document.getElementById('user-indicator');
-    
-    // 设置用户显示文本
-    userText.textContent = currentUser === 'his' ? '他的视角' : '她的视角';
-    
+
+    // 设置用户显示文本和主题emoji
+    userText.textContent = currentUser === 'his' ? '他的视角 💙' : '她的视角 💗';
+
     // 设置主题颜色
     document.documentElement.style.setProperty('--user-color', currentUser === 'his' ? '#4F9EFD' : '#FF75A0');
-    
+
+    // 应用主题 class 到 body
+    document.body.classList.add(currentUser === 'his' ? 'theme-his' : 'theme-her');
+
     // 添加CSS类设置颜色
     userIndicator.classList.add(currentUser === 'his' ? 'bg-his-primary' : 'bg-her-primary');
-    
+
     // 更新导航链接颜色
     document.querySelectorAll('nav a').forEach(link => {
         link.classList.add('text-primary');
     });
-    
+
     // 为CSS变量设置颜色
     const root = document.documentElement;
     root.style.setProperty('--primary-color', currentUser === 'his' ? '#4F9EFD' : '#FF75A0');
+
+    // 设置 meta theme-color
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', currentUser === 'his' ? '#4F9EFD' : '#FF75A0');
+
+    // 初始化滚动入场动画
+    initScrollAnimations();
+}
+
+// 滚动入场动画
+function initScrollAnimations() {
+    document.querySelectorAll('section, #days-together-card, #daily-section, .grid').forEach(el => {
+        el.classList.add('animate-on-scroll');
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+
+    // 初始化特效
+    initECG();
+    initParticles();
+}
+
+// ---- 粒子系统 ----
+// ---- 心电图动画（监护仪风格：逐点绘制，从左到右） ----
+function initECG() {
+    const canvas = document.getElementById('ecg-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const isHer = currentUser === 'her';
+    const color = isHer ? '#FF75A0' : '#4F9EFD';
+    const dpr = window.devicePixelRatio || 1;
+
+    let w, h;
+    let points = new Array(2000);
+
+    function resize() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        w = Math.floor(rect.width);
+        h = 100;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        for (let i = 0; i < points.length; i++) points[i] = undefined;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    let cursor = 0;         // 当前绘制位置
+    let waveQueue = [];     // 待绘制的波形数据
+    let waveIdx = 0;        // 波形数据中的当前位置
+
+    // 生成一个完整心跳周期的波形
+    function generateBeat() {
+        const pts = [];
+        // 心跳前的平静线（较长，模拟真实心率 60-80bpm）
+        const restLen = 120 + Math.floor(Math.random() * 80);
+        for (let i = 0; i < restLen; i++) {
+            pts.push((Math.random() - 0.5) * 0.8);
+        }
+        // P波（小圆拱）
+        const pH = 3 + Math.random() * 2;
+        for (let i = 0; i < 14; i++) {
+            pts.push(-Math.sin(i / 14 * Math.PI) * pH);
+        }
+        // PR段
+        for (let i = 0; i < 5; i++) pts.push((Math.random() - 0.5) * 0.5);
+        // Q小谷
+        pts.push(2 + Math.random() * 2);
+        pts.push(4 + Math.random() * 2);
+        // R大尖峰
+        const rH = 25 + Math.random() * 15;
+        pts.push(-rH * 0.6);
+        pts.push(-rH);
+        pts.push(-rH * 0.7);
+        // S谷
+        const sH = 8 + Math.random() * 6;
+        pts.push(sH);
+        pts.push(sH * 0.4);
+        // ST段
+        for (let i = 0; i < 8; i++) pts.push((Math.random() - 0.5) * 0.8);
+        // T波
+        const tH = 5 + Math.random() * 4;
+        for (let i = 0; i < 20; i++) {
+            pts.push(-Math.sin(i / 20 * Math.PI) * tH);
+        }
+        // 心跳后短平线
+        for (let i = 0; i < 10; i++) {
+            pts.push((Math.random() - 0.5) * 0.6);
+        }
+        return pts;
+    }
+
+    // 确保队列里有足够数据
+    function ensureWave() {
+        while (waveQueue.length - waveIdx < 400) {
+            waveQueue = waveQueue.concat(generateBeat());
+        }
+        // 回收已用数据防止内存增长
+        if (waveIdx > 1000) {
+            waveQueue = waveQueue.slice(waveIdx);
+            waveIdx = 0;
+        }
+    }
+    ensureWave();
+
+    const speed = 1.2; // 每帧前进像素数
+    let subPixel = 0;
+
+    function draw() {
+        const midY = h / 2;
+        const eraseWidth = 20; // 光标前方擦除宽度
+
+        // 前进
+        subPixel += speed;
+        const steps = Math.floor(subPixel);
+        subPixel -= steps;
+
+        for (let s = 0; s < steps; s++) {
+            const val = waveQueue[waveIdx] || 0;
+            waveIdx++;
+            ensureWave();
+
+            points[cursor] = midY + val;
+
+            // 擦除光标前方的区域
+            const eraseStart = cursor + 1;
+            for (let e = 0; e < eraseWidth; e++) {
+                const ei = (eraseStart + e) % w;
+                points[ei] = undefined;
+            }
+
+            cursor = (cursor + 1) % w;
+        }
+
+        // 绘制
+        ctx.clearRect(0, 0, w, h);
+
+        // 发光层
+        ctx.save();
+        ctx.filter = 'blur(4px)';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4;
+        ctx.globalAlpha = 0.08;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        drawTrace(ctx);
+        ctx.restore();
+
+        // 主线
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.35;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        drawTrace(ctx);
+
+        // 光标亮点
+        if (points[cursor > 0 ? cursor - 1 : w - 1] !== undefined) {
+            const cy = points[cursor > 0 ? cursor - 1 : w - 1];
+            const cx = cursor > 0 ? cursor - 1 : w - 1;
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 8);
+            grad.addColorStop(0, color);
+            grad.addColorStop(1, 'transparent');
+            ctx.globalAlpha = 0.6;
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.globalAlpha = 1;
+        requestAnimationFrame(draw);
+    }
+
+    function drawTrace(c) {
+        c.beginPath();
+        let moved = false;
+        for (let x = 0; x < w; x++) {
+            if (points[x] === undefined) {
+                if (moved) { c.stroke(); c.beginPath(); moved = false; }
+                continue;
+            }
+            if (!moved) {
+                c.moveTo(x, points[x]);
+                moved = true;
+            } else {
+                c.lineTo(x, points[x]);
+            }
+        }
+        if (moved) c.stroke();
+    }
+
+    draw();
+}
+
+function initParticles() {
+    const canvas = document.getElementById('particle-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let w, h, particles = [];
+    const isHer = currentUser === 'her';
+
+    function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // 粒子配置：他 → 蓝色星星 + 光点，她 → 粉色爱心 + 花瓣
+    const count = Math.min(35, Math.floor(w * h / 30000));
+
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            size: 3 + Math.random() * 8,
+            speedX: (Math.random() - 0.5) * 0.3,
+            speedY: -0.15 - Math.random() * 0.3,
+            opacity: 0.08 + Math.random() * 0.15,
+            phase: Math.random() * Math.PI * 2,
+            type: Math.random() > 0.4 ? 'shape' : 'dot'
+        });
+    }
+
+    function drawHeart(x, y, size, opacity) {
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        ctx.fillStyle = isHer ? '#FF75A0' : '#4F9EFD';
+        ctx.translate(x, y);
+        ctx.beginPath();
+        const s = size * 0.5;
+        ctx.moveTo(0, s * 0.3);
+        ctx.bezierCurveTo(-s, -s * 0.5, -s * 1.8, s * 0.3, 0, s * 1.5);
+        ctx.bezierCurveTo(s * 1.8, s * 0.3, s, -s * 0.5, 0, s * 0.3);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawStar(x, y, size, opacity) {
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        ctx.fillStyle = isHer ? '#FF75A0' : '#4F9EFD';
+        ctx.translate(x, y);
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+            const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+            const r = size * 0.45;
+            if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+            else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawDot(x, y, size, opacity) {
+        ctx.save();
+        ctx.globalAlpha = opacity * 0.6;
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
+        gradient.addColorStop(0, isHer ? 'rgba(255,117,160,0.6)' : 'rgba(79,158,253,0.6)');
+        gradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    let frame = 0;
+    function animate() {
+        ctx.clearRect(0, 0, w, h);
+        frame++;
+
+        particles.forEach(p => {
+            p.x += p.speedX;
+            p.y += p.speedY;
+            p.phase += 0.01;
+
+            // 漂浮摆动
+            p.x += Math.sin(p.phase) * 0.2;
+
+            // 越界重置
+            if (p.y < -20) { p.y = h + 20; p.x = Math.random() * w; }
+            if (p.x < -20) p.x = w + 20;
+            if (p.x > w + 20) p.x = -20;
+
+            // 呼吸般的透明度变化
+            const breathe = 0.5 + 0.5 * Math.sin(p.phase * 2);
+            const alpha = p.opacity * (0.6 + 0.4 * breathe);
+
+            if (p.type === 'shape') {
+                if (isHer) drawHeart(p.x, p.y, p.size, alpha);
+                else drawStar(p.x, p.y, p.size, alpha);
+            } else {
+                drawDot(p.x, p.y, p.size * 1.5, alpha);
+            }
+        });
+
+        requestAnimationFrame(animate);
+    }
+    animate();
 }
 
 // 初始化事件监听
@@ -85,12 +425,7 @@ function initEventListeners() {
         addNewMemory();
     });
     document.getElementById('calendar-link').addEventListener('click', function() {
-        // 获取当前页面的URL参数（如 ?user=her）
-        const currentParams = window.location.search;
-        // 拼接参数到新链接（如果有参数则携带，没有则不加）
-        const targetUrl = `calendar.html${currentParams}`;
-        // 跳转到带参数的链接
-        window.location.href = targetUrl;
+        window.location.href = 'calendar.html';
     });
     // 回忆分页事件
     document.getElementById('memories-prev-page').addEventListener('click', () => {
@@ -221,7 +556,7 @@ function loadAllData() {
 
 // 加载回忆
 function loadMemories() {
-    fetch(`${API_BASE_URL}/api/memories`)
+    fetch(`${API_BASE_URL}/api/memories`, { credentials: 'include' })
         .then(response => {
             if (!response.ok) throw new Error('加载回忆失败');
             return response.json();
@@ -255,7 +590,7 @@ function loadPhotos() {
 }
 // 加载消息
 function loadMessages() {
-    fetch(`${API_BASE_URL}/api/messages`)
+    fetch(`${API_BASE_URL}/api/messages`, { credentials: 'include' })
         .then(response => {
             if (!response.ok) throw new Error('加载消息失败');
             return response.json();
@@ -477,6 +812,7 @@ function addMemoryComment(memoryId, content) {
         headers: {
             'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(comment)
     }).catch(error => {
         console.error('添加评论失败:', error);
@@ -525,6 +861,7 @@ function addNewMemory() {
         headers: {
             'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(memory)
     })
     .then(response => {
@@ -639,6 +976,7 @@ async function uploadPhotos() {
             // 不要设置Content-Type，浏览器会自动处理multipart/form-data
             'X-Requested-With': 'XMLHttpRequest'
         },
+        credentials: 'include',
         body: formData,
         timeout: 60000 // 60秒超时
     })
@@ -708,6 +1046,7 @@ function loadPhotosFromServer() {
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
         },
+        credentials: 'include',
         timeout: 10000
     })
     .then(response => {
@@ -992,6 +1331,7 @@ function addPhotoComment() {
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
         },
+        credentials: 'include',
         body: JSON.stringify(commentData),
         timeout: 10000
     })
@@ -1125,6 +1465,7 @@ function addNewMessage() {
         headers: {
             'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(message)
     })
     .then(response => {
@@ -1246,4 +1587,375 @@ function showNotification(message, isError = false) {
         notification.classList.remove('translate-y-0', 'opacity-100');
         notification.classList.add('translate-y-20', 'opacity-0');
     }, 3000);
+}
+
+// ============================================================
+// 新功能模块：纪念日、愿望清单、情侣任务、每日问答
+// ============================================================
+
+function loadNewFeatures() {
+    loadAnniversaries();
+    loadWishes();
+    loadTasks();
+    loadDailyQuestion();
+}
+
+function initNewFeatureListeners() {
+    // 纪念日管理
+    document.getElementById('manage-anniversary-btn')?.addEventListener('click', showAnniversaryManager);
+
+    // 愿望清单
+    document.getElementById('add-wish-btn')?.addEventListener('click', () => {
+        document.getElementById('wish-form-container').classList.toggle('hidden');
+    });
+    document.getElementById('cancel-wish')?.addEventListener('click', () => {
+        document.getElementById('wish-form-container').classList.add('hidden');
+        document.getElementById('wish-form').reset();
+    });
+    document.getElementById('wish-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        addWish();
+    });
+
+    // 情侣任务
+    document.getElementById('add-task-btn')?.addEventListener('click', () => {
+        document.getElementById('task-form-container').classList.toggle('hidden');
+    });
+    document.getElementById('cancel-task')?.addEventListener('click', () => {
+        document.getElementById('task-form-container').classList.add('hidden');
+        document.getElementById('task-form').reset();
+    });
+    document.getElementById('task-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        addTask();
+    });
+}
+
+// ---- 纪念日 ----
+async function loadAnniversaries() {
+    try {
+        // 加载统计数据获取恋爱天数
+        const statsRes = await fetch('/api/timeline/stats', { credentials: 'include' });
+        if (statsRes.ok) {
+            const stats = await statsRes.json();
+            if (stats.success && stats.data.daysTogether > 0) {
+                document.getElementById('days-count').textContent = stats.data.daysTogether;
+            }
+        }
+
+        // 加载即将到来的纪念日
+        const res = await fetch('/api/anniversaries/upcoming', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const container = document.getElementById('upcoming-anniversaries');
+        if (!data.success || !data.data || data.data.length === 0) {
+            container.innerHTML = '<p class="col-span-full text-center text-gray-400 text-sm py-2">还没有纪念日，点击下方管理添加</p>';
+            return;
+        }
+
+        container.innerHTML = data.data.slice(0, 6).map(a => `
+            <div class="bg-white rounded-xl shadow-sm p-4 text-center border border-gray-100">
+                <div class="text-2xl mb-1">${a.icon || (a.type === 'birthday' ? '🎂' : '💕')}</div>
+                <p class="text-sm font-medium text-gray-700 truncate">${escapeHtml(a.title)}</p>
+                <p class="text-xs text-gray-400 mt-1">${a.nextDate}</p>
+                <p class="text-lg font-bold ${a.daysUntil === 0 ? 'text-red-500' : 'text-primary'} mt-1">
+                    ${a.daysUntil === 0 ? '就是今天!' : a.daysUntil + '天后'}
+                </p>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('加载纪念日失败:', e);
+    }
+}
+
+function showAnniversaryManager() {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+    modal.innerHTML = `
+        <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="this.parentElement.remove()"></div>
+        <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium">管理纪念日</h3>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600"><i class="fa fa-times"></i></button>
+            </div>
+            <form id="anniversary-form" class="space-y-3 mb-6">
+                <input type="text" id="anniv-title" placeholder="纪念日名称" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                <input type="date" id="anniv-date" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                <div class="flex gap-2">
+                    <select id="anniv-type" class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                        <option value="anniversary">纪念日</option>
+                        <option value="birthday">生日</option>
+                        <option value="countdown">倒计时</option>
+                    </select>
+                    <select id="anniv-repeat" class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                        <option value="yearly">每年</option>
+                        <option value="monthly">每月</option>
+                        <option value="none">不重复</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary/90 transition">添加纪念日</button>
+            </form>
+            <div id="anniv-list" class="space-y-2">加载中...</div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('anniversary-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await fetch('/api/anniversaries', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: document.getElementById('anniv-title').value,
+                date: document.getElementById('anniv-date').value,
+                type: document.getElementById('anniv-type').value,
+                repeat: document.getElementById('anniv-repeat').value
+            })
+        });
+        document.getElementById('anniversary-form').reset();
+        loadAnniversaryList();
+        loadAnniversaries();
+    });
+
+    loadAnniversaryList();
+}
+
+async function loadAnniversaryList() {
+    const res = await fetch('/api/anniversaries', { credentials: 'include' });
+    const data = await res.json();
+    const container = document.getElementById('anniv-list');
+    if (!data.success || !data.data || data.data.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-400 text-sm">暂无纪念日</p>';
+        return;
+    }
+    const typeLabels = { anniversary: '纪念日', birthday: '生日', countdown: '倒计时' };
+    container.innerHTML = data.data.map(a => `
+        <div class="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+            <div>
+                <p class="text-sm font-medium">${escapeHtml(a.title)}</p>
+                <p class="text-xs text-gray-400">${a.date} · ${typeLabels[a.type] || a.type}</p>
+            </div>
+            <button onclick="deleteAnniversary(${a.id})" class="text-red-400 hover:text-red-600 text-sm"><i class="fa fa-trash"></i></button>
+        </div>
+    `).join('');
+}
+
+async function deleteAnniversary(id) {
+    await fetch('/api/anniversaries/' + id, { method: 'DELETE', credentials: 'include' });
+    loadAnniversaryList();
+    loadAnniversaries();
+}
+
+// ---- 愿望清单 ----
+async function loadWishes() {
+    try {
+        const res = await fetch('/api/wishes', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const container = document.getElementById('wishes-list');
+        if (!data.success || !data.data || data.data.length === 0) {
+            container.innerHTML = '<div class="text-center text-gray-400 py-8">还没有愿望，许一个吧</div>';
+            return;
+        }
+        container.innerHTML = data.data.map(w => `
+            <div class="flex items-center gap-3 bg-white rounded-xl shadow-sm p-4 transition hover:shadow-md ${w.completed ? 'opacity-60' : ''}">
+                <button onclick="toggleWish(${w.id}, ${w.completed})" class="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition
+                    ${w.completed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-primary'}">
+                    ${w.completed ? '<i class="fa fa-check text-xs"></i>' : ''}
+                </button>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm ${w.completed ? 'line-through text-gray-400' : 'text-gray-800'}">${escapeHtml(w.title)}</p>
+                    ${w.description ? `<p class="text-xs text-gray-400 mt-0.5 truncate">${escapeHtml(w.description)}</p>` : ''}
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${w.author === 'his' ? 'bg-his-light text-his-dark' : 'bg-her-light text-her-dark'}">
+                    ${w.author === 'his' ? '他' : '她'}
+                </span>
+                <button onclick="deleteWish(${w.id})" class="text-gray-300 hover:text-red-400 flex-shrink-0"><i class="fa fa-times"></i></button>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('加载愿望失败:', e);
+    }
+}
+
+async function addWish() {
+    const title = document.getElementById('wish-title').value.trim();
+    if (!title) return;
+    await fetch('/api/wishes', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description: document.getElementById('wish-desc').value.trim() })
+    });
+    document.getElementById('wish-form').reset();
+    document.getElementById('wish-form-container').classList.add('hidden');
+    loadWishes();
+}
+
+async function toggleWish(id, currentState) {
+    await fetch('/api/wishes/' + id + '/complete', {
+        method: 'PATCH', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: !currentState })
+    });
+    loadWishes();
+}
+
+async function deleteWish(id) {
+    await fetch('/api/wishes/' + id, { method: 'DELETE', credentials: 'include' });
+    loadWishes();
+}
+
+// ---- 情侣任务 ----
+async function loadTasks() {
+    try {
+        const res = await fetch('/api/couple-tasks', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const container = document.getElementById('tasks-list');
+        const preview = document.getElementById('tasks-preview');
+
+        if (!data.success || !data.data || data.data.length === 0) {
+            container.innerHTML = '<div class="text-center text-gray-400 py-8">还没有任务，创建一个吧</div>';
+            preview.innerHTML = '<p class="text-gray-400 text-sm">暂无任务</p>';
+            return;
+        }
+
+        const statusLabels = { pending: '待完成', in_progress: '进行中', done: '已完成' };
+        const statusColors = { pending: 'bg-yellow-100 text-yellow-700', in_progress: 'bg-blue-100 text-blue-700', done: 'bg-green-100 text-green-700' };
+        const assignLabels = { his: '他', her: '她', both: '一起' };
+
+        // 任务预览（首页卡片中显示前3个未完成）
+        const pending = data.data.filter(t => t.status !== 'done').slice(0, 3);
+        preview.innerHTML = pending.length > 0
+            ? pending.map(t => `<p class="text-sm text-gray-600 truncate">· ${escapeHtml(t.title)}</p>`).join('')
+            : '<p class="text-green-500 text-sm">全部完成!</p>';
+
+        // 完整任务列表
+        container.innerHTML = data.data.map(t => `
+            <div class="flex items-center gap-3 bg-white rounded-xl shadow-sm p-4 transition hover:shadow-md">
+                <button onclick="cycleTaskStatus(${t.id}, '${t.status}')" class="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition
+                    ${t.status === 'done' ? 'bg-green-500 border-green-500 text-white' : t.status === 'in_progress' ? 'bg-blue-400 border-blue-400 text-white' : 'border-gray-300 hover:border-primary'}">
+                    ${t.status === 'done' ? '<i class="fa fa-check text-xs"></i>' : t.status === 'in_progress' ? '<i class="fa fa-ellipsis-h text-xs"></i>' : ''}
+                </button>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm ${t.status === 'done' ? 'line-through text-gray-400' : 'text-gray-800'}">${escapeHtml(t.title)}</p>
+                    <div class="flex gap-2 mt-1">
+                        <span class="text-xs px-1.5 py-0.5 rounded ${statusColors[t.status]}">${statusLabels[t.status]}</span>
+                        <span class="text-xs text-gray-400">${assignLabels[t.assigned_to]}来做</span>
+                        ${t.due_date ? `<span class="text-xs text-gray-400">${t.due_date}</span>` : ''}
+                    </div>
+                </div>
+                <button onclick="deleteTask(${t.id})" class="text-gray-300 hover:text-red-400 flex-shrink-0"><i class="fa fa-times"></i></button>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('加载任务失败:', e);
+    }
+}
+
+async function addTask() {
+    const title = document.getElementById('task-title').value.trim();
+    if (!title) return;
+    await fetch('/api/couple-tasks', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            title,
+            description: document.getElementById('task-desc').value.trim(),
+            assigned_to: document.getElementById('task-assigned').value,
+            due_date: document.getElementById('task-due').value || null
+        })
+    });
+    document.getElementById('task-form').reset();
+    document.getElementById('task-form-container').classList.add('hidden');
+    loadTasks();
+}
+
+async function cycleTaskStatus(id, current) {
+    const next = current === 'pending' ? 'in_progress' : current === 'in_progress' ? 'done' : 'pending';
+    await fetch('/api/couple-tasks/' + id + '/status', {
+        method: 'PATCH', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: next })
+    });
+    loadTasks();
+}
+
+async function deleteTask(id) {
+    await fetch('/api/couple-tasks/' + id, { method: 'DELETE', credentials: 'include' });
+    loadTasks();
+}
+
+// ---- 每日问答 ----
+async function loadDailyQuestion() {
+    try {
+        const res = await fetch('/api/daily-questions/today', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const container = document.getElementById('daily-question-content');
+
+        if (!data.success || !data.data) {
+            container.innerHTML = `
+                <p class="text-gray-400 text-sm mb-3">今天还没有问题</p>
+                <div class="flex gap-2">
+                    <input type="text" id="new-question-input" placeholder="写一个问题给TA..." class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                    <button onclick="createDailyQuestion()" class="px-3 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600 transition">提问</button>
+                </div>
+            `;
+            return;
+        }
+
+        const q = data.data;
+        const myAnswer = currentUser === 'his' ? q.his_answer : q.her_answer;
+        const theirAnswer = currentUser === 'his' ? q.her_answer : q.his_answer;
+
+        container.innerHTML = `
+            <p class="text-sm font-medium text-gray-800 mb-3">${escapeHtml(q.question)}</p>
+            ${!myAnswer ? `
+                <div class="flex gap-2">
+                    <input type="text" id="answer-input" placeholder="写下你的回答..." class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                    <button onclick="answerQuestion(${q.id})" class="px-3 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600 transition">回答</button>
+                </div>
+            ` : `
+                <div class="space-y-2">
+                    <div class="flex items-start gap-2">
+                        <span class="text-xs px-1.5 py-0.5 rounded-full ${currentUser === 'his' ? 'bg-his-light text-his-dark' : 'bg-her-light text-her-dark'}">我</span>
+                        <p class="text-sm text-gray-600">${escapeHtml(myAnswer)}</p>
+                    </div>
+                    ${theirAnswer ? `
+                        <div class="flex items-start gap-2">
+                            <span class="text-xs px-1.5 py-0.5 rounded-full ${currentUser === 'his' ? 'bg-her-light text-her-dark' : 'bg-his-light text-his-dark'}">TA</span>
+                            <p class="text-sm text-gray-600">${escapeHtml(theirAnswer)}</p>
+                        </div>
+                    ` : `<p class="text-xs text-gray-400">等待TA的回答...</p>`}
+                </div>
+            `}
+        `;
+    } catch (e) {
+        console.error('加载每日问答失败:', e);
+    }
+}
+
+async function createDailyQuestion() {
+    const input = document.getElementById('new-question-input');
+    const question = input?.value.trim();
+    if (!question) return;
+    await fetch('/api/daily-questions', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question })
+    });
+    loadDailyQuestion();
+}
+
+async function answerQuestion(id) {
+    const input = document.getElementById('answer-input');
+    const answer = input?.value.trim();
+    if (!answer) return;
+    await fetch('/api/daily-questions/' + id + '/answer', {
+        method: 'PATCH', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answer })
+    });
+    loadDailyQuestion();
 }

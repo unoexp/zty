@@ -1,174 +1,439 @@
-/* 基础样式增强 */
+/* ============================================================
+   情侣回忆应用 - 温暖有爱主题
+   ============================================================ */
+
+/* ---- 基础与背景 ---- */
 body {
-    background-color: #f9f7f5;
-    color: #333333; /* 加深文本颜色 */
+    color: #444;
+    background-attachment: fixed;
+    transition: background 0.5s ease;
+}
+body.theme-his {
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 30%, #f5f0ff 60%, #faf8ff 100%);
+}
+body.theme-her {
+    background: linear-gradient(135deg, #fff5f7 0%, #ffe8ef 30%, #fff0f5 60%, #fef5f8 100%);
 }
 
-/* 增强按钮样式 */
-button, .btn {
-    transition: all 0.3s ease;
+/* 全局平滑过渡 */
+*, *::before, *::after {
+    transition-property: background-color, border-color, color, box-shadow, transform, opacity;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
 }
 
-/* 主按钮样式 */
-.bg-primary {
-    background-color: #3b82f6 !important; /* 更深的蓝色 */
-    color: white !important;
-}
-
-.bg-primary:hover {
-    background-color: #2563eb !important;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-
-/* 危险按钮（删除等） */
-.text-red-600 {
-    color: #dc2626 !important;
-}
-
-.text-red-600:hover {
-    color: #b91c1c !important;
-}
-
-/* 链接样式 */
-a {
-    color: #1d4ed8 !important; /* 更深的链接色 */
-    font-weight: 500;
-}
-
-a:hover {
-    color: #1e40af !important;
-    text-decoration: underline;
-}
-
-/* 导航栏样式增强 */
+/* ---- 导航栏 ---- */
 nav {
-    background-color: white !important;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    background: rgba(255,255,255,0.85) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
 }
-
 nav a {
-    color: #4b5563 !important;
+    color: #64748b !important;
     font-weight: 500;
+    text-decoration: none !important;
+    position: relative;
 }
-
 nav a:hover {
-    color: #1e40af !important;
+    color: var(--primary-color, #4F9EFD) !important;
+    text-decoration: none !important;
+}
+nav a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--primary-color, #4F9EFD);
+    border-radius: 1px;
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+}
+nav a:hover::after {
+    width: 80%;
 }
 
-/* 卡片和容器样式 */
-.bg-white {
-    background-color: white !important;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    border-radius: 0.5rem;
-}
-
-/* 标题样式 */
-h1, h2, h3, h4, h5, h6 {
-    color: #1e293b !important; /* 更深的标题色 */
-    font-weight: 600;
-}
-
-/* 表单元素增强 */
-input, textarea, select {
-    border-color: #9ca3af !important;
-    color: #1e293b !important;
-}
-
-input:focus, textarea:focus, select:focus {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
-}
-
-/* 视角指示器增强 */
+/* ---- 用户指示条 ---- */
 #user-indicator {
     font-weight: 500;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    letter-spacing: 0.5px;
+    font-size: 13px;
+}
+.theme-his #user-indicator { background: linear-gradient(135deg, #4F9EFD, #7B68EE) !important; }
+.theme-her #user-indicator { background: linear-gradient(135deg, #FF75A0, #FF6B9D) !important; }
+
+/* ---- 按钮 ---- */
+button, .btn {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.bg-primary {
+    background: var(--primary-color, #4F9EFD) !important;
+    color: white !important;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.bg-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    filter: brightness(1.05);
+}
+.bg-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-/* 他的视角颜色增强 */
-.bg-his-primary {
-    background-color: #2563eb !important;
+/* ---- 链接 ---- */
+a { color: var(--primary-color, #4F9EFD) !important; font-weight: 500; text-decoration: none !important; }
+a:hover { filter: brightness(0.85); text-decoration: none !important; }
+
+/* ---- 卡片 ---- */
+.bg-white {
+    background: white !important;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+    border: 1px solid rgba(0,0,0,0.04);
+}
+.bg-white:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06);
 }
 
-.text-his-dark {
-    color: #1e3a8a !important;
-}
+/* ---- 标题 ---- */
+h1, h2, h3 { color: #2d3748 !important; }
+.theme-his h2.font-dancing { color: #4F9EFD !important; }
+.theme-her h2.font-dancing { color: #FF75A0 !important; }
 
-.bg-his-light {
-    background-color: #dbeafe !important;
-}
-
-/* 她的视角颜色增强 */
-.bg-her-primary {
-    background-color: #db2777 !important;
-}
-
-.text-her-dark {
-    color: #831843 !important;
-}
-
-.bg-her-light {
-    background-color: #fee2e2 !important;
-}
-
-/* 状态标签增强 */
-.bg-green-100 {
-    background-color: #dcfce7 !important;
-}
-
-.text-green-800 {
-    color: #166534 !important;
-}
-
-.bg-red-100 {
-    background-color: #fee2e2 !important;
-}
-
-.text-red-800 {
-    color: #991b1b !important;
-}
-
-/* 表格样式增强 */
-table {
-    border-collapse: separate;
-    border-spacing: 0;
-}
-
-th {
-    background-color: #f8fafc !important;
+/* ---- 表单 ---- */
+input, textarea, select {
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 12px !important;
     color: #334155 !important;
-    font-weight: 600;
+    transition: all 0.3s ease;
+}
+input:focus, textarea:focus, select:focus {
+    border-color: var(--primary-color, #4F9EFD) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color, #4F9EFD) 15%, transparent) !important;
+    outline: none;
 }
 
-tr:hover {
-    background-color: #f8fafc !important;
-}
+/* ---- 视角颜色 ---- */
+.theme-his .bg-his-primary, .bg-his-primary { background: linear-gradient(135deg, #4F9EFD, #6FB1FF) !important; }
+.theme-her .bg-her-primary, .bg-her-primary { background: linear-gradient(135deg, #FF75A0, #FF8FB4) !important; }
+.text-his-dark { color: #2C5282 !important; }
+.text-her-dark { color: #A64AC9 !important; }
+.bg-his-light { background-color: #EBF4FF !important; }
+.bg-her-light { background-color: #FFF0F3 !important; }
 
-/* 模态框增强 */
-.modal-backdrop {
-    background-color: rgba(0, 0, 0, 0.5) !important;
+/* ---- 照片网格 ---- */
+.photo-grid > div {
+    border-radius: 14px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-/* 照片网格样式 */
+.photo-grid > div:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+}
 .photo-grid img {
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.photo-grid > div:hover img {
+    transform: scale(1.08);
+}
+
+/* ---- 滚动入场动画 ---- */
+.animate-on-scroll {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.animate-on-scroll.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 卡片依次入场延迟 */
+.stagger-1 { transition-delay: 0.05s; }
+.stagger-2 { transition-delay: 0.1s; }
+.stagger-3 { transition-delay: 0.15s; }
+.stagger-4 { transition-delay: 0.2s; }
+
+/* ---- 心电图动画 ---- */
+.heartbeat-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 100px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ---- 纪念日倒计时 ---- */
+#days-together-card {
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+}
+.theme-his #days-together-card {
+    background: linear-gradient(135deg, #EBF4FF 0%, #E0E7FF 50%, #F0EAFF 100%) !important;
+    border: 1px solid rgba(79,158,253,0.15);
+}
+.theme-her #days-together-card {
+    background: linear-gradient(135deg, #FFF0F3 0%, #FFE4EC 50%, #FCE7F3 100%) !important;
+    border: 1px solid rgba(255,117,160,0.15);
+}
+#days-together-card::before {
+    content: '💕';
+    position: absolute;
+    font-size: 100px;
+    opacity: 0.06;
+    right: -10px;
+    top: -20px;
+    transform: rotate(15deg);
+    pointer-events: none;
+}
+
+/* ---- 纪念日小卡片 ---- */
+#upcoming-anniversaries > div {
+    border-radius: 16px;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.04);
+}
+#upcoming-anniversaries > div:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+/* ---- 快捷入口 ---- */
+.grid a[href] {
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,0.04);
+    transition: all 0.3s ease;
+}
+.grid a[href]:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    border-color: rgba(0,0,0,0.06);
+}
+.grid a[href] i {
     transition: transform 0.3s ease;
 }
-
-.photo-grid > div:hover img {
-    transform: scale(1.03);
+.grid a[href]:hover i {
+    transform: scale(1.2);
 }
 
-/* 响应式调整 */
+/* ---- 每日问答/任务卡片 ---- */
+#daily-question-card, #tasks-card {
+    border-radius: 16px;
+    transition: all 0.3s ease;
+}
+#daily-question-card:hover, #tasks-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+}
+
+/* ---- 回忆/消息卡片 ---- */
+#memories-list > div, #messages-list > div {
+    border-radius: 16px;
+    transition: all 0.35s ease;
+    border: 1px solid rgba(0,0,0,0.03);
+}
+#memories-list > div:hover, #messages-list > div:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+}
+
+/* ---- 愿望/任务列表项 ---- */
+#wishes-list > div, #tasks-list > div {
+    border-radius: 14px;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.04);
+}
+#wishes-list > div:hover, #tasks-list > div:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+/* ---- 模态框 ---- */
+.modal-backdrop {
+    background: rgba(0,0,0,0.4) !important;
+    backdrop-filter: blur(8px);
+}
+
+/* ---- 分页按钮 ---- */
+button[id*="page"] {
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+button[id*="page"]:hover:not(:disabled) {
+    background: var(--primary-color, #4F9EFD);
+    color: white;
+    border-color: var(--primary-color, #4F9EFD);
+}
+
+/* ---- 浮动光晕装饰（背景） ---- */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.04;
+    background-image:
+        radial-gradient(ellipse 600px 400px at 15% 85%, var(--primary-color, #FF75A0) 0%, transparent 70%),
+        radial-gradient(ellipse 500px 500px at 85% 15%, var(--primary-color, #4F9EFD) 0%, transparent 70%),
+        radial-gradient(ellipse 300px 300px at 50% 50%, #a78bfa 0%, transparent 70%);
+}
+
+/* ---- 玻璃态卡片增强 ---- */
+.bg-white\/80, .bg-white\/90 {
+    background: rgba(255,255,255,0.85) !important;
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    border: 1px solid rgba(255,255,255,0.5);
+}
+
+/* ---- 标签徽章美化 ---- */
+.bg-his-light, .bg-her-light {
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(0,0,0,0.03);
+}
+
+/* ---- 分隔区域装饰 ---- */
+section + section::before {
+    content: '· · ·';
+    display: block;
+    text-align: center;
+    color: rgba(0,0,0,0.08);
+    font-size: 20px;
+    letter-spacing: 8px;
+    margin-bottom: 2rem;
+    margin-top: -1rem;
+}
+section:first-child::before { display: none; }
+
+/* ---- 脉搏心跳动画 ---- */
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.15); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.1); }
+    60% { transform: scale(1); }
+}
+.heartbeat {
+    animation: heartbeat 2s ease-in-out infinite;
+    display: inline-block;
+}
+
+/* ---- 淡入上移动画 ---- */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* ---- 数字翻滚动画 ---- */
+@keyframes countUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.count-animate {
+    animation: countUp 0.8s ease-out forwards;
+}
+
+/* ---- 滚动条美化 ---- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+
+/* ---- 导航链接 ---- */
+.nav-link {
+    color: #64748b !important;
+    font-weight: 500;
+    text-decoration: none !important;
+    position: relative;
+    letter-spacing: 0.3px;
+    transition: all 0.3s ease;
+}
+.nav-link:hover { color: var(--primary-color, #4F9EFD) !important; }
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--primary-color, #4F9EFD);
+    border-radius: 1px;
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+}
+.nav-link:hover::after { width: 70%; }
+
+/* ---- 快捷入口卡片 ---- */
+.shortcut-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 8px;
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.6);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    text-decoration: none !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.shortcut-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+    border-color: rgba(0,0,0,0.06);
+}
+.shortcut-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+.shortcut-card:hover .shortcut-icon-wrap {
+    transform: scale(1.1) rotate(-3deg);
+}
+
+/* ---- 表单美化 ---- */
+.bg-white\/90 input,
+.bg-white\/90 textarea,
+.bg-white\/90 select {
+    background: rgba(249,250,251,0.5) !important;
+}
+.bg-white\/90 input:focus,
+.bg-white\/90 textarea:focus {
+    background: white !important;
+}
+
+/* ---- 空状态美化 ---- */
+#memories-list > div:only-child,
+#messages-list > div:only-child,
+#wishes-list > div:only-child,
+#tasks-list > div:only-child {
+    background: rgba(255,255,255,0.6) !important;
+    backdrop-filter: blur(10px);
+    border: 1px dashed rgba(0,0,0,0.1);
+}
+
+/* ---- 响应式 ---- */
 @media (max-width: 640px) {
-    body {
-        padding: 0;
-    }
-    
-    .container {
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
-    }
+    body { padding: 0; }
+    .container { padding-left: 0.75rem; padding-right: 0.75rem; }
+    .bg-white { border-radius: 14px; }
+    #days-together-card { border-radius: 16px; }
 }
-    

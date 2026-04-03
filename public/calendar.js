@@ -63,17 +63,27 @@ const specialDates = [
 
 // DOM加载完成后初始化
 document.addEventListener('DOMContentLoaded', async function() {
-    // 解析URL参数确定用户视角
-    const params = new URLSearchParams(window.location.search);
-    const user = params.get('user');
-    
-    if (user === 'his' || user === 'her') {
-        currentUser = user;
-        initUserInterface();
-    } else {
-        // 默认重定向到his视角
-        window.location.search = 'user=his';
+    // 优先通过 JWT 获取身份，降级到 URL 参数
+    try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (res.ok) {
+            const data = await res.json();
+            currentUser = data.user.username;
+        }
+    } catch(e) {}
+
+    if (!currentUser) {
+        const params = new URLSearchParams(window.location.search);
+        const user = params.get('user');
+        if (user === 'his' || user === 'her') {
+            currentUser = user;
+        } else {
+            window.location.href = '/login';
+            return;
+        }
     }
+
+    initUserInterface();
     
     // 初始化事件监听
     initEventListeners();
@@ -119,6 +129,7 @@ function saveMoods(date, hisMood, herMood) {
     
     fetch(`${API_BASE_URL}/api/daily-moods`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json'
         },
@@ -150,6 +161,7 @@ function uploadMoodImage(date, user, file) {
     
     return fetch(`${API_BASE_URL}/api/daily-moods/image`, {
         method: 'POST',
+        credentials: 'include',
         body: formData
     })
     .then(response => {
@@ -184,7 +196,7 @@ function showDateDetails(date) {
 // 加载指定日期的所有数据
 function loadDateData(date) {
     // 加载心情数据
-    fetch(`${API_BASE_URL}/api/daily-moods-query?date=${date}`)
+    fetch(`${API_BASE_URL}/api/daily-moods-query?date=${date}`, { credentials: 'include' })
         .then(response => response.json())
         .then(moodData => {
             renderMoods(moodData);
@@ -194,7 +206,7 @@ function loadDateData(date) {
         });
     
     // 加载当天的回忆
-    fetch(`${API_BASE_URL}/api/memories-query?date=${date}`)
+    fetch(`${API_BASE_URL}/api/memories-query?date=${date}`, { credentials: 'include' })
         .then(response => response.json())
         .then(memories => {
             renderDateMemories(memories);
@@ -204,7 +216,7 @@ function loadDateData(date) {
         });
     
     // 加载当天的照片
-    fetch(`${API_BASE_URL}/api/photos-query?date=${date}`)
+    fetch(`${API_BASE_URL}/api/photos-query?date=${date}`, { credentials: 'include' })
         .then(response => response.json())
         .then(photos => {
             renderDatePhotos(photos);
@@ -214,7 +226,7 @@ function loadDateData(date) {
         });
     
     // 加载当天的悄悄话
-    fetch(`${API_BASE_URL}/api/messages-query?date=${date}`)
+    fetch(`${API_BASE_URL}/api/messages-query?date=${date}`, { credentials: 'include' })
         .then(response => response.json())
         .then(messages => {
             renderDateMessages(messages);
@@ -268,12 +280,7 @@ function initEventListeners() {
         renderCalendar();
     });
     document.getElementById('main-link').addEventListener('click', function() {
-        // 获取当前页面的URL参数（如 ?user=her）
-        const currentParams = window.location.search;
-        // 拼接参数到新链接（如果有参数则携带，没有则不加）
-        const targetUrl = `index.html${currentParams}`;
-        // 跳转到带参数的链接
-        window.location.href = targetUrl;
+        window.location.href = '/';
     });
     // 模态框控制
     document.getElementById('close-modal').addEventListener('click', closeModal);
@@ -384,6 +391,7 @@ function saveMoodEntry() {
     // 保存心情数据
     fetch(`${API_BASE_URL}/api/daily-moods`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json'
         },
@@ -397,7 +405,7 @@ function saveMoodEntry() {
     })
     .then(data => {
         console.log('心情保存成功', data);
-        
+
         // 处理图片上传
         if (imageInput.files.length > 0) {
             uploadMoodImage(today, currentUser, imageInput.files[0])
@@ -939,7 +947,7 @@ function loadPhotoComments(photoId) {
 // 加载日历数据
 async function loadCalendarData() {
     try {
-        const response = await fetch('/api/daily-moods');
+        const response = await fetch('/api/daily-moods', { credentials: 'include' });
         const result = await response.json();
         
         if (result.success) {

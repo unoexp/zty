@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/public/manifest.json">
+    <meta name="theme-color" content="#FF75A0">
     <link rel="stylesheet" href="styles.css">
     <script src="index.js"></script>
     <script>
@@ -36,115 +38,278 @@
     
     <style type="text/tailwindcss">
         @layer utilities {
-            .content-auto {
-                content-visibility: auto;
-            }
-            .text-shadow {
-                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-            .blur-text {
-                color: transparent;
-                text-shadow: 0 0 8px rgba(0,0,0,0.5);
-                transition: all 0.3s ease;
-            }
-            .blur-text-reveal {
-                color: inherit;
-                text-shadow: none;
-            }
+            .content-auto { content-visibility: auto; }
+            .text-shadow { text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .blur-text { color: transparent; text-shadow: 0 0 8px rgba(0,0,0,0.5); transition: all 0.3s ease; }
+            .blur-text-reveal { color: inherit; text-shadow: none; }
             .mask-gradient {
                 mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
                 -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
             }
-            .photo-grid {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 0.75rem;
-            }
-            @media (min-width: 640px) {
-                .photo-grid {
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 1rem;
-                }
-            }
-            @media (min-width: 1024px) {
-                .photo-grid {
-                    grid-template-columns: repeat(4, 1fr);
-                }
-            }
-            .modal-backdrop {
-                backdrop-filter: blur(5px);
-            }
-            .fade-in {
-                animation: fadeIn 0.5s ease-in-out;
-            }
-            .flex {
-                flex-wrap: wrap;
-            }
+            .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+            @media (min-width: 640px) { .photo-grid { grid-template-columns: repeat(3, 1fr); gap: 1rem; } }
+            @media (min-width: 1024px) { .photo-grid { grid-template-columns: repeat(4, 1fr); } }
+            .modal-backdrop { backdrop-filter: blur(5px); }
+            .fade-in { animation: fadeIn 0.5s ease-in-out; }
+            .flex { flex-wrap: wrap; }
         }
-        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
+    <style>
+        /* 粒子画布 */
+        #particle-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0;
+        }
+        main, nav { position: relative; z-index: 1; }
+
+        /* section 标题装饰线 */
+        .section-title {
+            position: relative;
+            display: inline-block;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 40px;
+            height: 3px;
+            border-radius: 2px;
+            background: var(--primary-color, #FF75A0);
+            transition: width 0.4s ease;
+        }
+        section:hover .section-title::after {
+            width: 100%;
+        }
+
+        /* 按钮涟漪效果 */
+        .ripple-btn { position: relative; overflow: hidden; }
+        .ripple-btn::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0; left: 0;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 10%, transparent 10.01%);
+            transform: scale(10);
+            opacity: 0;
+            transition: transform 0.5s, opacity 0.8s;
+            pointer-events: none;
+        }
+        .ripple-btn:active::after {
+            transform: scale(0);
+            opacity: 1;
+            transition: 0s;
+        }
+
+        /* 照片卡片光泽扫过 */
+        .photo-grid > div {
+            position: relative;
+            overflow: hidden;
+        }
+        .photo-grid > div::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -60%;
+            width: 40%;
+            height: 200%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            transform: rotate(25deg);
+            transition: left 0.6s ease;
+            pointer-events: none;
+        }
+        .photo-grid > div:hover::after {
+            left: 120%;
+        }
+
+        /* 纪念日数字发光 */
+        #days-count {
+            text-shadow: 0 0 30px color-mix(in srgb, var(--primary-color, #FF75A0) 30%, transparent);
+        }
+
+        /* 快捷入口图标呼吸效果 */
+        .shortcut-icon {
+            animation: breathe 3s ease-in-out infinite;
+        }
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* 顶部导航毛玻璃增强 */
+        #user-indicator {
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+        }
+
+        /* 消息卡片左边彩条 */
+        #memories-list > div, #messages-list > div {
+            border-left: 3px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+        .theme-his #memories-list > div:hover,
+        .theme-his #messages-list > div:hover {
+            border-left-color: #4F9EFD;
+        }
+        .theme-her #memories-list > div:hover,
+        .theme-her #messages-list > div:hover {
+            border-left-color: #FF75A0;
+        }
+
+        /* 分页器当前页 */
+        .page-dot-active {
+            background: var(--primary-color, #4F9EFD) !important;
+            transform: scale(1.3);
+        }
+    </style>
 </head>
 <body class="font-inter text-gray-800 min-h-screen">
+    <!-- 粒子背景 -->
+    <canvas id="particle-canvas"></canvas>
     <!-- 导航栏 -->
-    <nav class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-40 transition-all duration-300 shadow-sm">
-        <div id="user-indicator" class="fixed top-0 left-0 right-0 z-50 py-2 px-4 text-center font-medium text-white relative overflow-hidden">
-        <div class="absolute inset-0 bg-black/30 backdrop-blur-md z-[-1]"></div>
-        <p id="user-text">加载中...</p>
-	</div>
-        <div class="container mx-auto px-4 py-3 flex justify-center items-center">
-            <ul class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm md:text-base">
-                <li><a href="#memories" class="hover:text-primary transition-colors py-2">回忆</a></li>
-                <li><a href="#photos" class="hover:text-primary transition-colors py-2">相册</a></li>
-                <li><a href="#messages" class="hover:text-primary transition-colors py-2">悄悄话</a></li>
-                <li><a href="javascript:void(0);" class="hover:text-primary transition-colors py-2" id="calendar-link">恋爱日历</a></li>
-            </ul>
+    <nav class="fixed top-0 left-0 right-0 z-40 transition-all duration-300">
+        <div id="user-indicator" class="fixed top-0 left-0 right-0 z-50 py-2.5 px-4 font-medium text-white relative overflow-hidden flex items-center justify-center">
+            <div class="absolute inset-0 z-[-1]"></div>
+            <p id="user-text" class="flex-1 text-center text-sm tracking-widest"></p>
+            <button onclick="switchUser()" class="text-xs bg-white/20 hover:bg-white/40 px-3.5 py-1.5 rounded-full transition-all absolute right-4 backdrop-blur-sm border border-white/10">
+                <i class="fa fa-exchange mr-1"></i>切换身份
+            </button>
+        </div>
+        <div class="bg-white/70 backdrop-blur-xl border-b border-white/40 shadow-sm">
+            <div class="container mx-auto px-4 py-3 flex justify-center items-center">
+                <ul class="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm">
+                    <li><a href="#memories" class="nav-link py-2 px-1">回忆</a></li>
+                    <li><a href="#photos" class="nav-link py-2 px-1">相册</a></li>
+                    <li><a href="#messages" class="nav-link py-2 px-1">悄悄话</a></li>
+                    <li><a href="/timeline" class="nav-link py-2 px-1">时间线</a></li>
+                    <li><a href="/map" class="nav-link py-2 px-1">足迹</a></li>
+                    <li><a href="javascript:void(0);" class="nav-link py-2 px-1" id="calendar-link">日历</a></li>
+                </ul>
+            </div>
         </div>
     </nav>
 
     <!-- 主内容区 -->
     <main class="container mx-auto px-4 pt-28 pb-16">
-        <div class="flex items-center justify-between mb-8">
-            <button id="game1-btn" class="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-full transition-colors flex items-center shadow-sm"
-                onclick="window.location.href='game1.html'">
-                <i class="fa"></i>匹配度测试
-            </button>
-            <button id="game2-btn" class="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-full transition-colors flex items-center shadow-sm"
-                onclick="window.location.href='game2.html'">
-                <i class="fa"></i>心动盲盒
-            </button>
+
+        <!-- 纪念日倒计时区 -->
+        <section id="anniversary-section" class="mb-12">
+            <div id="days-together-card" class="text-center py-10 px-6 rounded-3xl mb-8 shadow-lg relative overflow-hidden">
+                <!-- 装饰圆环 -->
+                <div class="absolute -top-10 -right-10 w-40 h-40 rounded-full border-2 border-white/10 pointer-events-none"></div>
+                <div class="absolute -bottom-6 -left-6 w-24 h-24 rounded-full border-2 border-white/10 pointer-events-none"></div>
+                <!-- 心电图动画（canvas 动态绘制） -->
+                <canvas id="ecg-canvas" class="heartbeat-line"></canvas>
+                <p class="text-gray-400 text-sm mb-2 tracking-wider relative z-10">我们在一起已经</p>
+                <div class="flex items-baseline justify-center gap-2 mb-2 relative z-10">
+                    <span id="days-count" class="text-6xl md:text-7xl font-bold bg-gradient-to-r from-his-primary via-purple-400 to-her-primary bg-clip-text text-transparent drop-shadow-sm count-animate">--</span>
+                    <span class="text-xl text-gray-500 font-light">天</span>
+                </div>
+                <p class="text-gray-400 text-xs mt-1 tracking-wide relative z-10">每一天，都因为有你而特别 <span class="heartbeat">💕</span></p>
+            </div>
+            <div id="upcoming-anniversaries" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+            </div>
+            <div class="flex justify-center">
+                <button id="manage-anniversary-btn" class="text-sm text-gray-400 hover:text-primary transition-all hover:tracking-wider">
+                    <i class="fa fa-cog mr-1"></i>管理纪念日
+                </button>
+            </div>
+        </section>
+
+        <!-- 每日互动区 -->
+        <section id="daily-section" class="mb-12">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- 每日问答 -->
+                <div id="daily-question-card" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md p-6 border-l-4 border-purple-400 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-purple-50 rounded-bl-[40px] -z-0 group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
+                    <div class="flex items-center justify-between mb-3 relative">
+                        <h3 class="text-base font-semibold text-purple-600 flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center"><i class="fa fa-question-circle text-purple-500"></i></span>
+                            今日问答
+                        </h3>
+                    </div>
+                    <div id="daily-question-content" class="relative">
+                        <p class="text-gray-400 text-sm">加载中...</p>
+                    </div>
+                </div>
+                <!-- 情侣任务 -->
+                <div id="tasks-card" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md p-6 border-l-4 border-emerald-400 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-emerald-50 rounded-bl-[40px] -z-0 group-hover:w-28 group-hover:h-28 transition-all duration-500"></div>
+                    <div class="flex items-center justify-between mb-3 relative">
+                        <h3 class="text-base font-semibold text-emerald-600 flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center"><i class="fa fa-check-circle text-emerald-500"></i></span>
+                            待完成任务
+                        </h3>
+                        <a href="#tasks-section" class="text-xs text-gray-400 hover:text-emerald-500 transition-colors relative">查看全部 <i class="fa fa-angle-right ml-0.5"></i></a>
+                    </div>
+                    <div id="tasks-preview" class="relative">
+                        <p class="text-gray-400 text-sm">加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 快捷功能入口 -->
+        <div class="grid grid-cols-4 gap-4 mb-12">
+            <a href="/timeline" class="shortcut-card group">
+                <div class="shortcut-icon-wrap bg-blue-50 group-hover:bg-blue-100">
+                    <i class="fa fa-clock-o text-lg text-blue-500 shortcut-icon"></i>
+                </div>
+                <span class="text-xs text-gray-500 mt-2 font-medium">时间线</span>
+            </a>
+            <a href="/map" class="shortcut-card group">
+                <div class="shortcut-icon-wrap bg-rose-50 group-hover:bg-rose-100">
+                    <i class="fa fa-map-marker text-lg text-rose-500 shortcut-icon" style="animation-delay:0.5s"></i>
+                </div>
+                <span class="text-xs text-gray-500 mt-2 font-medium">足迹地图</span>
+            </a>
+            <a href="#wishes-section" class="shortcut-card group" id="wish-link">
+                <div class="shortcut-icon-wrap bg-amber-50 group-hover:bg-amber-100">
+                    <i class="fa fa-star text-lg text-amber-500 shortcut-icon" style="animation-delay:1s"></i>
+                </div>
+                <span class="text-xs text-gray-500 mt-2 font-medium">愿望清单</span>
+            </a>
+            <a href="game1.html" class="shortcut-card group">
+                <div class="shortcut-icon-wrap bg-violet-50 group-hover:bg-violet-100">
+                    <i class="fa fa-gamepad text-lg text-violet-500 shortcut-icon" style="animation-delay:1.5s"></i>
+                </div>
+                <span class="text-xs text-gray-500 mt-2 font-medium">小游戏</span>
+            </a>
         </div>
+
         <!-- 回忆部分 -->
         <section id="memories" class="mb-20 scroll-mt-24">
             <div class="flex items-center justify-between mb-8">
-                <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary">我们的回忆</h2>
-                <button id="add-memory-btn" class="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-full transition-colors flex items-center shadow-sm">
+                <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary section-title">我们的回忆</h2>
+                <button id="add-memory-btn" class="bg-primary text-white py-2.5 px-5 rounded-full flex items-center shadow-md ripple-btn text-sm font-medium">
                     <i class="fa fa-plus mr-2"></i>添加回忆
                 </button>
             </div>
-            
+
             <!-- 回忆添加表单 -->
-            <div id="memory-form-container" class="bg-white rounded-xl shadow-md p-6 mb-8 hidden">
-                <h3 class="text-lg font-medium mb-4">添加新回忆</h3>
-                <form id="memory-form" class="space-y-4">
+            <div id="memory-form-container" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-7 mb-8 hidden border border-white/50">
+                <h3 class="text-lg font-semibold mb-5 flex items-center gap-2"><span class="w-1.5 h-6 rounded-full bg-primary inline-block"></span>添加新回忆</h3>
+                <form id="memory-form" class="space-y-5">
                     <div>
-                        <label for="memory-title" class="block text-sm font-medium text-gray-700 mb-1">标题</label>
-                        <input type="text" id="memory-title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition">
+                        <label for="memory-title" class="block text-sm font-medium text-gray-500 mb-1.5">标题</label>
+                        <input type="text" id="memory-title" placeholder="给这段回忆起个名字" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-gray-50/50">
                     </div>
                     <div>
-                        <label for="memory-date" class="block text-sm font-medium text-gray-700 mb-1">日期</label>
-                        <input type="datetime-local" id="memory-date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition">
+                        <label for="memory-date" class="block text-sm font-medium text-gray-500 mb-1.5">日期</label>
+                        <input type="datetime-local" id="memory-date" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-gray-50/50">
                     </div>
                     <div>
-                        <label for="memory-content" class="block text-sm font-medium text-gray-700 mb-1">内容</label>
-                        <textarea id="memory-content" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="描述这段回忆..."></textarea>
+                        <label for="memory-content" class="block text-sm font-medium text-gray-500 mb-1.5">内容</label>
+                        <textarea id="memory-content" rows="4" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-gray-50/50" placeholder="写下这段回忆，让它永远留在这里..."></textarea>
                     </div>
-                    <div class="flex justify-end gap-3">
-                        <button type="button" id="cancel-memory" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition">取消</button>
-                        <button type="submit" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition">保存回忆</button>
+                    <div class="flex justify-end gap-3 pt-1">
+                        <button type="button" id="cancel-memory" class="px-5 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition text-gray-500 text-sm">取消</button>
+                        <button type="submit" class="bg-primary text-white px-6 py-2.5 rounded-xl transition shadow-md ripple-btn text-sm font-medium">保存回忆</button>
                     </div>
                 </form>
             </div>
@@ -172,16 +337,16 @@
         <!-- 相册部分 -->
         <section id="photos" class="mb-20 scroll-mt-24">
         <div class="flex items-center justify-between mb-8">
-            <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary">我们的相册</h2>
-            <label for="photo-upload" class="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-full transition-colors flex items-center shadow-sm cursor-pointer">
-                <i class="fa fa-upload mr-2"></i>上传照片
+            <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary section-title">我们的相册</h2>
+            <label for="photo-upload" class="bg-primary text-white py-2.5 px-5 rounded-full flex items-center shadow-md cursor-pointer ripple-btn text-sm font-medium">
+                <i class="fa fa-camera mr-2"></i>上传照片
             </label>
             <input type="file" id="photo-upload" accept="image/*" multiple class="hidden">
         </div>
         
         <!-- 图片上传配置 - 新增文字描述输入 -->
-        <div id="photo-upload-config" class="bg-white rounded-xl shadow-md p-6 mb-8 hidden">
-            <h3 class="text-lg font-medium mb-4">上传设置</h3>
+        <div id="photo-upload-config" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-7 mb-8 hidden border border-white/50">
+            <h3 class="text-lg font-semibold mb-5 flex items-center gap-2"><span class="w-1.5 h-6 rounded-full bg-primary inline-block"></span>上传设置</h3>
             <div class="space-y-4">
                 <div>
                     <p class="text-sm text-gray-600 mb-2"><span id="selected-photos-count">0</span> 张照片待上传</p>
@@ -228,9 +393,9 @@
     </section>
 
     <!-- 图片查看器模态框 - 增强文字展示 -->
-    <div id="photo-viewer" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="absolute inset-0 bg-black/70 modal-backdrop" id="photo-viewer-backdrop"></div>
-        <div class="relative z-10 max-w-5xl w-full max-h-[90vh] flex flex-col md:flex-row bg-white rounded-xl overflow-hidden shadow-2xl">
+    <div id="photo-viewer" class="fixed inset-0 z-50 flex items-center justify-center hidden" style="animation: fadeIn 0.3s ease">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" id="photo-viewer-backdrop"></div>
+        <div class="relative z-10 max-w-5xl w-full max-h-[90vh] flex flex-col md:flex-row bg-white/95 backdrop-blur-xl rounded-2xl overflow-hidden shadow-2xl border border-white/30 mx-4">
             <!-- 图片展示区 -->
             <div class="md:w-2/3 bg-gray-100 flex items-center justify-center relative">
                 <button id="prev-photo" class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 text-white flex items-center justify-center hover:bg-black/50 transition">
@@ -274,15 +439,15 @@
         <!-- 悄悄话部分 -->
         <section id="messages" class="scroll-mt-24">
             <div class="flex items-center justify-between mb-8">
-                <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary">悄悄话</h2>
-                <button id="add-message-btn" class="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-full transition-colors flex items-center shadow-sm">
+                <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary section-title">悄悄话</h2>
+                <button id="add-message-btn" class="bg-primary text-white py-2.5 px-5 rounded-full flex items-center shadow-md ripple-btn text-sm font-medium">
                     <i class="fa fa-pencil mr-2"></i>写悄悄话
                 </button>
             </div>
             
             <!-- 悄悄话表单 -->
-            <div id="message-form-container" class="bg-white rounded-xl shadow-md p-6 mb-8 hidden">
-                <h3 class="text-lg font-medium mb-4">写一段悄悄话</h3>
+            <div id="message-form-container" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-7 mb-8 hidden border border-white/50">
+                <h3 class="text-lg font-semibold mb-5 flex items-center gap-2"><span class="w-1.5 h-6 rounded-full bg-primary inline-block"></span>写一段悄悄话</h3>
                 <form id="message-form" class="space-y-4">
                     <div>
                         <label for="message-content" class="block text-sm font-medium text-gray-700 mb-1">内容</label>
@@ -318,7 +483,70 @@
                 </button>
             </div>
         </section>
+
+        <!-- 愿望清单 -->
+        <section id="wishes-section" class="mb-20 scroll-mt-24">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary section-title">愿望清单</h2>
+                <button id="add-wish-btn" class="bg-primary text-white py-2.5 px-5 rounded-full flex items-center shadow-md ripple-btn text-sm font-medium">
+                    <i class="fa fa-star mr-2"></i>许愿
+                </button>
+            </div>
+            <div id="wish-form-container" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-7 mb-6 hidden border border-white/50">
+                <form id="wish-form" class="space-y-4">
+                    <input type="text" id="wish-title" placeholder="写下你的愿望..." required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary transition">
+                    <textarea id="wish-desc" rows="2" placeholder="补充说明（可选）" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary transition"></textarea>
+                    <div class="flex justify-end gap-3">
+                        <button type="button" id="cancel-wish" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition">取消</button>
+                        <button type="submit" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition">许愿</button>
+                    </div>
+                </form>
+            </div>
+            <div id="wishes-list" class="space-y-3">
+                <div class="text-center text-gray-400 py-8">加载中...</div>
+            </div>
+        </section>
+
+        <!-- 情侣任务 -->
+        <section id="tasks-section" class="mb-20 scroll-mt-24">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary section-title">情侣任务</h2>
+                <button id="add-task-btn" class="bg-primary text-white py-2.5 px-5 rounded-full flex items-center shadow-md ripple-btn text-sm font-medium">
+                    <i class="fa fa-plus mr-2"></i>新任务
+                </button>
+            </div>
+            <div id="task-form-container" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-7 mb-6 hidden border border-white/50">
+                <form id="task-form" class="space-y-4">
+                    <input type="text" id="task-title" placeholder="任务标题" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary transition">
+                    <textarea id="task-desc" rows="2" placeholder="任务描述（可选）" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary transition"></textarea>
+                    <div class="flex gap-3">
+                        <select id="task-assigned" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
+                            <option value="both">一起完成</option>
+                            <option value="his">他来做</option>
+                            <option value="her">她来做</option>
+                        </select>
+                        <input type="date" id="task-due" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button type="button" id="cancel-task" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition">取消</button>
+                        <button type="submit" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition">创建</button>
+                    </div>
+                </form>
+            </div>
+            <div id="tasks-list" class="space-y-3">
+                <div class="text-center text-gray-400 py-8">加载中...</div>
+            </div>
+        </section>
     </main>
 
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/public/sw.js')
+                    .then((reg) => console.log('SW registered:', reg.scope))
+                    .catch((err) => console.log('SW registration failed:', err));
+            });
+        }
+    </script>
 </body>
 </html>

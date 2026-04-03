@@ -1,0 +1,13 @@
+{
+  "name": "我们的故事",
+  "short_name": "我们的故事",
+  "description": "情侣回忆应用",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FF75A0",
+  "icons": [
+    { "src": "/public/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/public/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
