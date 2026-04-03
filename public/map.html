@@ -116,6 +116,8 @@
             attribution: '&copy; OpenStreetMap contributors',
             maxZoom: 18
         }).addTo(map);
+        // 移动端容器尺寸可能延迟就绪，强制刷新地图尺寸
+        setTimeout(() => map.invalidateSize(), 300);
     }
 
     function createIcon(color) {
