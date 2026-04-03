@@ -53,32 +53,53 @@
                 display: grid;
                 grid-template-columns: repeat(7, 1fr);
             }
-            .mood-icon {
-                transition: transform 0.3s ease;
-            }
             .mood-icon:hover {
                 transform: scale(1.1);
             }
             .day-cell {
                 aspect-ratio: 1;
                 min-height: 30px;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
             }
             .day-cell .day-number {
-                /* 最小12px，首选1.5vw（视窗宽度的1.5%），最大16px */
-                font-size: clamp(10px, 1.5vw, 16px);
+                font-size: clamp(10px, 1.5vw, 14px);
+                line-height: 1;
+                flex-shrink: 0;
             }
             /* 特殊日期标记文字 */
             .day-cell .special-marker {
-                font-size: clamp(8px, 1.2vw, 14px);
+                font-size: clamp(6px, 1vw, 10px);
+                line-height: 1;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 60%;
             }
             .day-cell.selected {
                 border-color: var(--primary-color);
-                background-color: rgba(79, 158, 253, 0.1); /* 淡蓝色背景 */
+                background-color: rgba(79, 158, 253, 0.1);
             }
             .half-cell {
                 position: relative;
-                height: 50%;
+                flex: 1;
+                min-height: 0;
                 width: 100%;
+            }
+            .half-left, .half-right {
+                position: absolute;
+                top: 0;
+                height: 100%;
+                width: 50%;
+            }
+            .half-left {
+                left: 0;
+                border-radius: 0 0 0 4px;
+            }
+            .half-right {
+                right: 0;
+                border-radius: 0 0 4px 0;
             }
             .half-left::after {
                 content: '';
@@ -89,19 +110,8 @@
                 width: 1px;
                 background-color: rgba(0,0,0,0.1);
             }
-            .half-right {
-                position: absolute;
-                top: 0;
-                right: 0;
-                height: 100%;
-                width: 50%;
-            }
-            .half-left {
-                position: absolute;
-                top: 0;
-                left: 0;
-                height: 100%;
-                width: 50%;
+            .mood-icon {
+                font-size: clamp(8px, 1.2vw, 14px) !important;
             }
             /* 心情容器整体样式 */
             #his-mood-content, #her-mood-content {

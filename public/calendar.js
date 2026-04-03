@@ -565,7 +565,7 @@ function renderCalendar() {
         }
         // 4. 日期数字 + 特殊日期标记（右侧空白位置）
         const dayNumberContainer = document.createElement('div');
-        dayNumberContainer.className = "flex justify-between items-start text-xs font-medium mb-1 day-number"; // 用flex让日期和标记左右分布
+        dayNumberContainer.className = "flex justify-between items-start font-medium day-number"; // 用flex让日期和标记左右分布
         
         // 日期数字
         const dayNumber = document.createElement('div');
