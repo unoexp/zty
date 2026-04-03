@@ -424,9 +424,6 @@ function initEventListeners() {
         e.preventDefault();
         addNewMemory();
     });
-    document.getElementById('calendar-link').addEventListener('click', function() {
-        window.location.href = '/calendar';
-    });
     // 回忆分页事件
     document.getElementById('memories-prev-page').addEventListener('click', () => {
         if (memoriesCurrentPage > 1) {
