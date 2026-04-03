@@ -1242,28 +1242,34 @@ function openPhotoViewer(index) {
         `${photo.author === 'his' ? '他' : '她'} · ${formatDate(photo.date)}`;
     loadPhotoComments(photo.id);
 
-    // 设置缩略图，用 decode() 确保完全解码后再显示 viewer
-    viewerImage.style.transition = 'none';
-    viewerImage.style.filter = 'blur(20px)';
-    viewerImage.style.transform = 'scale(1.05)';
-    viewerImage.src = thumbUrl;
-
-    viewerImage.decode().then(() => {
+    // 预加载缩略图，decode 确保解码完成后直接显示（不做 opacity 过渡，避免 backdrop-blur 闪烁）
+    const thumbImg = new Image();
+    thumbImg.src = thumbUrl;
+    thumbImg.decode().then(() => {
+        viewerImage.style.transition = 'none';
+        viewerImage.style.filter = 'blur(20px)';
+        viewerImage.style.transform = 'scale(1.05)';
+        viewerImage.src = thumbUrl;
+        // 直接显示，不做过渡
         viewer.style.opacity = '1';
         viewer.style.pointerEvents = 'auto';
         document.body.style.overflow = 'hidden';
 
-        // 缩略图已显示，后台加载原图
-        viewerImage.style.transition = 'filter 0.5s ease, transform 0.5s ease';
+        // 后台加载原图
         const fullImg = new Image();
         fullImg.src = originalUrl;
         fullImg.decode().then(() => {
+            viewerImage.style.transition = 'filter 0.5s ease, transform 0.5s ease';
             viewerImage.src = originalUrl;
             viewerImage.style.filter = 'none';
             viewerImage.style.transform = 'scale(1)';
-        }).catch(() => {});
+        }).catch(() => {
+            viewerImage.src = originalUrl;
+            viewerImage.style.filter = 'none';
+            viewerImage.style.transform = 'scale(1)';
+        });
     }).catch(() => {
-        // decode 失败时仍显示 viewer
+        viewerImage.src = thumbUrl;
         viewer.style.opacity = '1';
         viewer.style.pointerEvents = 'auto';
         document.body.style.overflow = 'hidden';
@@ -1275,9 +1281,7 @@ function closePhotoViewer() {
     const viewer = document.getElementById('photo-viewer');
     viewer.style.opacity = '0';
     viewer.style.pointerEvents = 'none';
-    setTimeout(() => {
-        document.getElementById('viewer-image').removeAttribute('src');
-    }, 200);
+    document.getElementById('viewer-image').removeAttribute('src');
     document.body.style.overflow = '';
 }
 
