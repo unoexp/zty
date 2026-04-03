@@ -64,6 +64,10 @@ app.get('/map', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'map.html'));
 });
 
+app.get('/calendar', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'calendar.html'));
+});
+
 // 启动服务器（监听所有网卡，支持外网访问）
 const HOST = process.env.HOST || '0.0.0.0';
 app.listen(PORT, HOST, () => {

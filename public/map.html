@@ -26,7 +26,7 @@
         }
     </script>
     <style>
-        #map-container { width: 100%; height: calc(100vh - 120px); z-index: 1; }
+        #map-container { width: 100%; height: calc(100vh - 56px); z-index: 1; }
         .location-form-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.5);
             backdrop-filter: blur(4px); z-index: 1000;
@@ -60,10 +60,10 @@
         </div>
     </nav>
 
-    <main class="pt-16 pb-16 px-0">
-        <div class="container mx-auto px-4 mb-4 flex flex-col md:flex-row justify-between items-center">
-            <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary mb-2 md:mb-0">我们的足迹</h2>
-            <div id="stats" class="text-sm text-gray-500"></div>
+    <main class="pt-14 px-0">
+        <div class="container mx-auto px-4 py-2 flex flex-col md:flex-row justify-between items-center">
+            <h2 class="text-[clamp(1.4rem,3vw,1.8rem)] font-dancing text-primary mb-1 md:mb-0">我们的足迹</h2>
+            <div id="stats" class="text-xs text-gray-400"></div>
         </div>
         <div id="map-container"></div>
     </main>
