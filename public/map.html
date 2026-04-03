@@ -47,20 +47,20 @@
     </style>
 </head>
 <body class="font-inter text-gray-800 min-h-screen bg-gray-50">
-    <nav class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-40 shadow-sm">
-        <div id="user-indicator" class="fixed top-0 left-0 right-0 z-50 py-2 px-4 text-center font-medium text-white relative overflow-hidden">
-            <div class="absolute inset-0 bg-black/30 backdrop-blur-md z-[-1]"></div>
-            <p id="user-text">加载中...</p>
-        </div>
-        <div class="container mx-auto px-4 py-3 flex justify-center items-center">
-            <ul class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm md:text-base">
-                <li><a href="/" class="hover:text-primary transition-colors py-2">返回主页</a></li>
-                <li><span class="text-primary border-b-2 border-primary py-2">我们的足迹</span></li>
-            </ul>
+    <nav class="fixed top-0 left-0 right-0 z-40 transition-all duration-300">
+        <div class="bg-white/70 backdrop-blur-xl border-b border-white/40 shadow-sm">
+            <div class="container mx-auto px-4 py-3 flex justify-center items-center">
+                <ul class="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm">
+                    <li><a href="/" class="nav-link py-2 px-1">首页</a></li>
+                    <li><a href="/timeline" class="nav-link py-2 px-1">时间线</a></li>
+                    <li><a href="#" class="nav-link py-2 px-1 text-primary border-b-2 border-primary">足迹</a></li>
+                    <li><a href="/calendar" class="nav-link py-2 px-1">日历</a></li>
+                </ul>
+            </div>
         </div>
     </nav>
 
-    <main class="pt-24 pb-16 px-0">
+    <main class="pt-16 pb-16 px-0">
         <div class="container mx-auto px-4 mb-4 flex flex-col md:flex-row justify-between items-center">
             <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary mb-2 md:mb-0">我们的足迹</h2>
             <div id="stats" class="text-sm text-gray-500"></div>
@@ -107,10 +107,6 @@
     });
 
     function initUserInterface() {
-        const userIndicator = document.getElementById('user-indicator');
-        const userText = document.getElementById('user-text');
-        userText.textContent = currentUser === 'his' ? '他的视角' : '她的视角';
-        userIndicator.classList.add(currentUser === 'his' ? 'bg-his-primary' : 'bg-her-primary');
         document.documentElement.style.setProperty('--primary-color', currentUser === 'his' ? HIS_COLOR : HER_COLOR);
     }
 

@@ -408,13 +408,13 @@
             <i class="fa fa-angle-right text-xl"></i>
         </button>
         <!-- 主内容区 -->
-        <div class="relative z-10 w-full h-full flex flex-col">
+        <div class="relative z-10 w-full h-full flex flex-col pointer-events-none">
             <!-- 图片展示区 -->
-            <div class="flex-1 flex items-center justify-center min-h-0 px-14 py-12">
-                <img id="viewer-image" src="" alt="照片大图" class="max-w-full max-h-full object-contain">
+            <div class="flex-1 flex items-center justify-center min-h-0 px-14 py-12 pointer-events-none">
+                <img id="viewer-image" src="" alt="照片大图" class="max-w-full max-h-full object-contain pointer-events-auto">
             </div>
             <!-- 底部信息栏 -->
-            <div class="flex-shrink-0 bg-black/60 text-white px-4 py-3">
+            <div class="flex-shrink-0 bg-black/60 text-white px-4 py-3 pointer-events-auto">
                 <div class="max-w-3xl mx-auto">
                     <p id="photo-caption" class="text-sm mb-0.5"></p>
                     <p id="photo-author-date" class="text-xs opacity-70 mb-2"></p>

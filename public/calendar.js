@@ -240,15 +240,15 @@ function loadDateData(date) {
 function initUserInterface() {
     const userText = document.getElementById('user-text');
     const userIndicator = document.getElementById('user-indicator');
-    
+
     // 设置用户显示文本
-    userText.textContent = currentUser === 'his' ? '他的视角' : '她的视角';
-    
+    if (userText) userText.textContent = currentUser === 'his' ? '他的视角' : '她的视角';
+
     // 设置主题颜色
     document.documentElement.style.setProperty('--user-color', currentUser === 'his' ? '#4F9EFD' : '#FF75A0');
-    
+
     // 添加CSS类设置颜色
-    userIndicator.classList.add(currentUser === 'his' ? 'bg-his-primary' : 'bg-her-primary');
+    if (userIndicator) userIndicator.classList.add(currentUser === 'his' ? 'bg-his-primary' : 'bg-her-primary');
     
     // 更新导航链接颜色
     document.querySelectorAll('nav a').forEach(link => {
@@ -278,7 +278,8 @@ function initEventListeners() {
         curDay = formatDateDay(currentDate);
         renderCalendar();
     });
-    document.getElementById('main-link').addEventListener('click', function() {
+    const mainLink = document.getElementById('main-link');
+    if (mainLink) mainLink.addEventListener('click', function() {
         window.location.href = '/';
     });
     // 模态框控制
@@ -630,7 +631,7 @@ function openDayModal(dateStr) {
     const modalDate = document.getElementById('modal-date');
     const hisMoodDisplay = document.getElementById('his-mood-display');
     const herMoodDisplay = document.getElementById('her-mood-display');
-    const diaryContent = document.getElementById('diary-content');
+    const diaryContent = document.getElementById('mood-note');
     
     // 重置模态框
     document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('ring-2', 'ring-offset-2', 'ring-primary'));
@@ -671,7 +672,7 @@ function openDayModal(dateStr) {
     }
     
     // 加载日记内容
-    diaryContent.value = userData.diary || '';
+    diaryContent.value = userData.note || userData.diary || '';
     
     // 存储当前日期到模态框
     modal.dataset.currentDate = dateStr;
@@ -842,7 +843,7 @@ function saveDiaryEntry() {
     const selectedMood = document.querySelector('.mood-btn.ring-2')?.dataset.mood;
     
     // 获取日记内容
-    const diaryContent = document.getElementById('diary-content').value.trim();
+    const diaryContent = document.getElementById('mood-note').value.trim();
     
     // 获取图片（这里只是模拟，实际应用中需要上传到服务器）
     const images = []; // 实际应用中这里会存储图片URL

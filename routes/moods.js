@@ -9,8 +9,8 @@ router.get('/', optionalAuth, (req, res) => {
     const moods = db.prepare('SELECT * FROM daily_moods ORDER BY date DESC').all();
     const result = moods.map(m => ({
         date: m.date,
-        his: { mood: m.his_mood, imageUrl: m.his_image_url, thumbnailUrl: m.his_thumbnail_url },
-        her: { mood: m.her_mood, imageUrl: m.her_image_url, thumbnailUrl: m.her_thumbnail_url },
+        his: { mood: m.his_mood, note: m.his_note || '', imageUrl: m.his_image_url, thumbnailUrl: m.his_thumbnail_url },
+        her: { mood: m.her_mood, note: m.her_note || '', imageUrl: m.her_image_url, thumbnailUrl: m.her_thumbnail_url },
         createdAt: m.created_at,
         updatedAt: m.updated_at
     }));
@@ -31,25 +31,31 @@ router.post('/', authenticateUser, (req, res) => {
         const updates = {};
         if (his !== undefined) {
             updates.his_mood = his.mood || his.emoji || existing.his_mood;
+            updates.his_note = his.note !== undefined ? his.note : existing.his_note;
         }
         if (her !== undefined) {
             updates.her_mood = her.mood || her.emoji || existing.her_mood;
+            updates.her_note = her.note !== undefined ? her.note : existing.her_note;
         }
         db.prepare(`UPDATE daily_moods SET
             his_mood = COALESCE(?, his_mood),
+            his_note = COALESCE(?, his_note),
             her_mood = COALESCE(?, her_mood),
+            her_note = COALESCE(?, her_note),
             updated_at = ? WHERE date = ?`)
-            .run(updates.his_mood ?? null, updates.her_mood ?? null, now, date);
+            .run(updates.his_mood ?? null, updates.his_note ?? null,
+                 updates.her_mood ?? null, updates.her_note ?? null, now, date);
     } else {
-        db.prepare(`INSERT INTO daily_moods (date, his_mood, her_mood, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`)
-            .run(date, his?.mood || his?.emoji || '', her?.mood || her?.emoji || '', now, now);
+        db.prepare(`INSERT INTO daily_moods (date, his_mood, his_note, her_mood, her_note, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+            .run(date, his?.mood || his?.emoji || '', his?.note || '',
+                 her?.mood || her?.emoji || '', her?.note || '', now, now);
     }
 
     const record = db.prepare('SELECT * FROM daily_moods WHERE date = ?').get(date);
     res.json({
         date: record.date,
-        his: { mood: record.his_mood, imageUrl: record.his_image_url, thumbnailUrl: record.his_thumbnail_url },
-        her: { mood: record.her_mood, imageUrl: record.her_image_url, thumbnailUrl: record.her_thumbnail_url },
+        his: { mood: record.his_mood, note: record.his_note || '', imageUrl: record.his_image_url, thumbnailUrl: record.his_thumbnail_url },
+        her: { mood: record.her_mood, note: record.her_note || '', imageUrl: record.her_image_url, thumbnailUrl: record.her_thumbnail_url },
         createdAt: record.created_at,
         updatedAt: record.updated_at
     });

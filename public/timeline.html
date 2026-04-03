@@ -152,21 +152,20 @@
 <body class="font-inter">
 
     <!-- 顶部导航 -->
-    <nav class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
-        <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="/" class="flex items-center gap-2 text-gray-600 hover:text-his-primary transition-colors">
-                <i class="fa fa-arrow-left"></i>
-                <span class="text-sm">返回首页</span>
-            </a>
-            <h1 class="text-lg font-semibold text-gray-800">
-                <i class="fa fa-clock-o text-her-primary mr-1"></i>
-                时间线
-            </h1>
-            <div class="w-16"></div>
+    <nav class="fixed top-0 left-0 right-0 z-40 transition-all duration-300">
+        <div class="bg-white/70 backdrop-blur-xl border-b border-white/40 shadow-sm">
+            <div class="container mx-auto px-4 py-3 flex justify-center items-center">
+                <ul class="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm">
+                    <li><a href="/" class="nav-link py-2 px-1">首页</a></li>
+                    <li><a href="#" class="nav-link py-2 px-1 text-primary border-b-2 border-primary">时间线</a></li>
+                    <li><a href="/map" class="nav-link py-2 px-1">足迹</a></li>
+                    <li><a href="/calendar" class="nav-link py-2 px-1">日历</a></li>
+                </ul>
+            </div>
         </div>
     </nav>
 
-    <div class="max-w-3xl mx-auto px-4 py-6">
+    <div class="max-w-3xl mx-auto px-4 pt-20 pb-6">
 
         <!-- 统计卡片 -->
         <div id="statsSection" class="grid grid-cols-4 gap-2 sm:gap-3 mb-6">

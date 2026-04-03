@@ -87,9 +87,11 @@ CREATE INDEX IF NOT EXISTS idx_comments_entity ON comments (entity_type, entity_
 CREATE TABLE IF NOT EXISTS daily_moods (
     date               TEXT PRIMARY KEY,
     his_mood           TEXT    NOT NULL DEFAULT '',
+    his_note           TEXT    NOT NULL DEFAULT '',
     his_image_url      TEXT    NOT NULL DEFAULT '',
     his_thumbnail_url  TEXT    NOT NULL DEFAULT '',
     her_mood           TEXT    NOT NULL DEFAULT '',
+    her_note           TEXT    NOT NULL DEFAULT '',
     her_image_url      TEXT    NOT NULL DEFAULT '',
     her_thumbnail_url  TEXT    NOT NULL DEFAULT '',
     created_at         TEXT    NOT NULL DEFAULT (datetime('now')),
@@ -159,5 +161,16 @@ CREATE TABLE IF NOT EXISTS locations (
 CREATE INDEX IF NOT EXISTS idx_locations_memory ON locations (memory_id);
 CREATE INDEX IF NOT EXISTS idx_locations_photo  ON locations (photo_id);
 `);
+
+// 自动迁移：为已有数据库添加缺失的列
+try {
+    const cols = db.prepare("PRAGMA table_info(daily_moods)").all().map(c => c.name);
+    if (!cols.includes('his_note')) {
+        db.exec("ALTER TABLE daily_moods ADD COLUMN his_note TEXT NOT NULL DEFAULT ''");
+    }
+    if (!cols.includes('her_note')) {
+        db.exec("ALTER TABLE daily_moods ADD COLUMN her_note TEXT NOT NULL DEFAULT ''");
+    }
+} catch (e) { /* table may not exist yet */ }
 
 module.exports = db;
