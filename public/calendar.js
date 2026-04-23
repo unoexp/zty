@@ -68,6 +68,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const res = await fetch('/api/auth/me', { credentials: 'include' });
         if (res.ok) {
             const data = await res.json();
+            if (data.user.username !== 'his' && data.user.username !== 'her') {
+                window.location.href = '/login';
+                return;
+            }
             currentUser = data.user.username;
         }
     } catch(e) {}

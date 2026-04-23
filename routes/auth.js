@@ -68,7 +68,12 @@ router.post('/login', async (req, res) => {
 
 // 登出
 router.post('/logout', (req, res) => {
-    res.clearCookie('token');
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/'
+    });
     res.json({ success: true, message: '已退出登录' });
 });
 

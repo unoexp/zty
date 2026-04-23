@@ -46,6 +46,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         } else {
             const data = await res.json();
+            // 仅允许 his/her 使用主应用，管理员请使用管理后台
+            if (data.user.username !== 'his' && data.user.username !== 'her') {
+                window.location.href = '/login';
+                return;
+            }
             currentUser = data.user.username;
         }
     } catch (e) {
