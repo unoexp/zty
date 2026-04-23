@@ -26,12 +26,16 @@ const storage = multer.diskStorage({
     }
 });
 
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const VIDEO_TYPES = ['video/mp4', 'video/mov', 'video/quicktime', 'video/webm', 'video/x-msvideo', 'video/x-matroska'];
+const AUDIO_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/x-m4a', 'audio/aac', 'audio/flac'];
+
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (allowedTypes.includes(file.mimetype)) {
+    const allAllowed = [...IMAGE_TYPES, ...VIDEO_TYPES, ...AUDIO_TYPES];
+    if (allAllowed.includes(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error('只允许上传图片文件（JPEG, PNG, GIF, WebP）'), false);
+        cb(new Error('不支持的文件格式，请上传图片、视频或音频文件'), false);
     }
 };
 
@@ -77,4 +81,18 @@ const deleteUploadedFile = (filename, thumbnailUrl) => {
     }
 };
 
-module.exports = { UPLOADS_DIR, THUMBNAILS_DIR, upload, generateThumbnail, deleteUploadedFile };
+// 根据 MIME 类型判断文件类型
+const getMediaType = (mimetype) => {
+    if (IMAGE_TYPES.includes(mimetype)) return 'image';
+    if (VIDEO_TYPES.includes(mimetype)) return 'video';
+    if (AUDIO_TYPES.includes(mimetype)) return 'audio';
+    return 'other';
+};
+
+// 生成视频缩略图占位（返回空字符串，前端显示播放按钮图标）
+const generateVideoThumbnail = async (filename) => {
+    // 视频文件暂时不生成缩略图，前端用播放按钮图标
+    return '';
+};
+
+module.exports = { UPLOADS_DIR, THUMBNAILS_DIR, upload, generateThumbnail, deleteUploadedFile, getMediaType, generateVideoThumbnail };

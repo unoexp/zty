@@ -206,6 +206,8 @@
                     <span class="dock-dot" style="background:#34d399"></span>相册</a>
                 <a href="#messages" class="dock-item" data-section="messages">
                     <span class="dock-dot" style="background:#8b5cf6"></span>悄悄话</a>
+                <a href="#audios" class="dock-item" data-section="audios">
+                    <span class="dock-dot" style="background:#f97316"></span>音频</a>
                 <span class="dock-sep"></span>
                 <a href="#wishes-section" class="dock-item" data-section="wishes-section">
                     <span class="dock-dot" style="background:#fbbf24"></span>愿望</a>
@@ -347,9 +349,9 @@
         <div class="flex items-center justify-between mb-8">
             <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary section-title">我们的相册</h2>
             <label for="photo-upload" class="bg-primary text-white py-2.5 px-5 rounded-full flex items-center shadow-md cursor-pointer ripple-btn text-sm font-medium">
-                <i class="fa fa-camera mr-2"></i>上传照片
+                <i class="fa fa-camera mr-2"></i>上传照片/视频
             </label>
-            <input type="file" id="photo-upload" accept="image/*" multiple class="hidden">
+            <input type="file" id="photo-upload" accept="image/*,video/*" multiple class="hidden">
         </div>
         
         <!-- 图片上传配置 - 新增文字描述输入 -->
@@ -357,7 +359,7 @@
             <h3 class="text-lg font-semibold mb-5 flex items-center gap-2"><span class="w-1.5 h-6 rounded-full bg-primary inline-block"></span>上传设置</h3>
             <div class="space-y-4">
                 <div>
-                    <p class="text-sm text-gray-600 mb-2"><span id="selected-photos-count">0</span> 张照片待上传</p>
+                    <p class="text-sm text-gray-600 mb-2"><span id="selected-photos-count">0</span> 个文件待上传</p>
                     <div id="photo-previews" class="flex flex-wrap gap-2 mb-4"></div>
                 </div>
                 
@@ -419,7 +421,8 @@
         <div class="relative z-10 w-full h-full flex flex-col pointer-events-none">
             <!-- 图片展示区 -->
             <div class="flex-1 flex items-center justify-center min-h-0 px-14 py-12 pointer-events-none">
-                <img id="viewer-image" src="" alt="照片大图" class="max-w-full max-h-full object-contain pointer-events-auto">
+                <img id="viewer-image" src="" alt="照片大图" class="max-w-full max-h-full object-contain pointer-events-auto hidden">
+                <video id="viewer-video" src="" controls class="max-w-full max-h-full object-contain pointer-events-auto hidden" playsinline></video>
             </div>
             <!-- 底部信息栏 -->
             <div class="flex-shrink-0 bg-black/60 text-white px-4 py-3 pointer-events-auto">
@@ -483,6 +486,68 @@
                 <button id="messages-next-page" class="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
                     <i class="fa fa-angle-right"></i>
                 </button>
+            </div>
+        </section>
+
+        <!-- 音频模块 -->
+        <section id="audios" class="mb-20 scroll-mt-24">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-dancing text-primary section-title">我们的声音</h2>
+                <div class="flex gap-2">
+                    <button id="add-audio-btn" class="bg-primary text-white py-2.5 px-5 rounded-full flex items-center shadow-md ripple-btn text-sm font-medium">
+                        <i class="fa fa-upload mr-2"></i>上传音频
+                    </button>
+                    <button id="record-audio-btn" class="bg-gradient-to-r from-orange-400 to-rose-400 text-white py-2.5 px-5 rounded-full flex items-center shadow-md ripple-btn text-sm font-medium">
+                        <i class="fa fa-microphone mr-2"></i>录制
+                    </button>
+                </div>
+                <input type="file" id="audio-upload" accept="audio/*" class="hidden">
+            </div>
+
+            <!-- 录音界面 -->
+            <div id="recorder-panel" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-7 mb-8 hidden border border-white/50">
+                <h3 class="text-lg font-semibold mb-5 flex items-center gap-2"><span class="w-1.5 h-6 rounded-full bg-orange-400 inline-block"></span>语音录制</h3>
+                <div class="text-center py-6">
+                    <div id="recorder-timer" class="text-4xl font-mono font-bold text-gray-700 mb-4">00:00</div>
+                    <div id="recorder-visualizer" class="h-16 bg-gradient-to-r from-orange-50 to-rose-50 rounded-xl mb-4 flex items-center justify-center overflow-hidden">
+                        <div class="flex items-end gap-1 h-12" id="visualizer-bars">
+                            <div class="w-2 bg-orange-300 rounded-full" style="height:20%"></div>
+                            <div class="w-2 bg-rose-300 rounded-full" style="height:40%"></div>
+                            <div class="w-2 bg-orange-400 rounded-full" style="height:60%"></div>
+                            <div class="w-2 bg-rose-400 rounded-full" style="height:30%"></div>
+                            <div class="w-2 bg-orange-300 rounded-full" style="height:50%"></div>
+                            <div class="w-2 bg-rose-300 rounded-full" style="height:70%"></div>
+                            <div class="w-2 bg-orange-400 rounded-full" style="height:25%"></div>
+                            <div class="w-2 bg-rose-400 rounded-full" style="height:55%"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-center gap-4">
+                        <button id="start-record-btn" class="bg-red-500 text-white w-14 h-14 rounded-full shadow-lg hover:bg-red-600 transition flex items-center justify-center">
+                            <i class="fa fa-microphone text-xl"></i>
+                        </button>
+                        <button id="stop-record-btn" class="bg-gray-400 text-white w-14 h-14 rounded-full shadow-lg hidden flex items-center justify-center">
+                            <i class="fa fa-stop text-xl"></i>
+                        </button>
+                        <button id="cancel-record-btn" class="bg-gray-200 text-gray-600 px-5 py-2.5 rounded-xl hover:bg-gray-300 transition hidden text-sm">
+                            取消
+                        </button>
+                    </div>
+                    <div id="record-preview" class="mt-4 hidden">
+                        <p class="text-sm text-gray-500 mb-2">录制完成：</p>
+                        <audio controls class="w-full mb-3"></audio>
+                        <input type="text" id="record-caption" placeholder="添加描述（可选）" class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 text-sm">
+                        <button id="save-record-btn" class="bg-primary text-white px-6 py-2.5 rounded-xl shadow-md ripple-btn text-sm font-medium">
+                            <i class="fa fa-save mr-2"></i>保存录音
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 音频列表 -->
+            <div id="audios-list" class="space-y-4">
+                <div class="bg-white rounded-xl shadow-md p-6 text-center text-gray-500">
+                    暂无音频，点击"录制"或"上传音频"记录你们的声音吧
+                </div>
             </div>
         </section>
 

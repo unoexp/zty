@@ -949,26 +949,42 @@ function handlePhotoSelection(event) {
     // 清空现有预览
     photoPreviews.innerHTML = '';
     
-    // 显示预览
+    // 显示预览（图片显示缩略图，视频显示图标）
     Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            const previewContainer = document.createElement('div');
-            previewContainer.className = 'relative w-20 h-20 rounded-md overflow-hidden bg-gray-100';
-            
+        const isVideo = file.type.startsWith('video/');
+        const previewContainer = document.createElement('div');
+        previewContainer.className = 'relative w-20 h-20 rounded-md overflow-hidden bg-gray-100';
+
+        if (isVideo) {
             previewContainer.innerHTML = `
-                <img src="${e.target.result}" alt="预览图" class="w-full h-full object-cover">
-                <button type="button" class="absolute top-1 right-1 w-5 h-5 bg-white/80 rounded-full flex items-center justify-center text-gray-600 hover:text-red-500 transition" 
+                <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                    <i class="fa fa-video-camera text-gray-400 text-2xl"></i>
+                </div>
+                <div class="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center truncate px-1">
+                    ${escapeHtml(file.name)}
+                </div>
+                <button type="button" class="absolute top-1 right-1 w-5 h-5 bg-white/80 rounded-full flex items-center justify-center text-gray-600 hover:text-red-500 transition"
                         onclick="this.closest('.relative').remove(); updateSelectedPhotoCount()">
                     <i class="fa fa-times text-xs"></i>
                 </button>
             `;
-            
-            photoPreviews.appendChild(previewContainer);
-        };
-        
-        reader.readAsDataURL(file);
+        } else {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = previewContainer.querySelector('img');
+                if (img) img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            previewContainer.innerHTML = `
+                <img src="" alt="预览图" class="w-full h-full object-cover">
+                <button type="button" class="absolute top-1 right-1 w-5 h-5 bg-white/80 rounded-full flex items-center justify-center text-gray-600 hover:text-red-500 transition"
+                        onclick="this.closest('.relative').remove(); updateSelectedPhotoCount()">
+                    <i class="fa fa-times text-xs"></i>
+                </button>
+            `;
+        }
+
+        photoPreviews.appendChild(previewContainer);
     });
     
     // 更新计数
@@ -1164,22 +1180,44 @@ function renderPhotos() {
         const photoElement = document.createElement('div');
         photoElement.className = 'group relative rounded-xl overflow-hidden shadow-md cursor-pointer aspect-square bg-gray-100';
 
-        const imageUrl = photo.thumbnailUrl
-            ? (photo.thumbnailUrl.startsWith('http') ? photo.thumbnailUrl : `${API_BASE_URL}${photo.thumbnailUrl}`)
-            : (photo.url.startsWith('http') ? photo.url : `${API_BASE_URL}${photo.url}`);
+        const mediaType = photo.mediaType || photo.media_type || 'image';
+        const isVideo = mediaType === 'video';
 
-        photoElement.innerHTML = `
-            <img src="${imageUrl}" alt="${escapeHtml(photo.description || '照片')}" loading="lazy" class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <i class="fa fa-search-plus text-white text-xl"></i>
-            </div>
-            <span class="absolute top-2 right-2 text-xs px-1.5 py-0.5 rounded ${photo.author === 'his' ? 'bg-his-primary/80' : 'bg-her-primary/80'} text-white">${photo.author === 'his' ? '他' : '她'}</span>
-            ${photo.description ? `
-                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white p-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                    ${escapeHtml(photo.description.substring(0, 30))}${photo.description.length > 30 ? '...' : ''}
+        // 视频缩略图：显示第一帧或播放图标；图片：显示缩略图
+        if (isVideo) {
+            const videoUrl = photo.url.startsWith('http') ? photo.url : `${API_BASE_URL}${photo.url}`;
+            photoElement.innerHTML = `
+                <video src="${videoUrl}" preload="metadata" muted playsinline class="w-full h-full object-cover"></video>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-14 h-14 bg-white/80 rounded-full flex items-center justify-center shadow-lg">
+                        <i class="fa fa-play text-gray-700 text-xl ml-1"></i>
+                    </div>
                 </div>
-            ` : ''}
-        `;
+                <div class="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <i class="fa fa-expand text-white text-xl"></i>
+                </div>
+                <span class="absolute top-2 right-2 text-xs px-1.5 py-0.5 rounded ${photo.author === 'his' ? 'bg-his-primary/80' : 'bg-her-primary/80'} text-white flex items-center gap-1">
+                    <i class="fa fa-video-camera"></i> ${photo.author === 'his' ? '他' : '她'}
+                </span>
+            `;
+        } else {
+            const imageUrl = photo.thumbnailUrl
+                ? (photo.thumbnailUrl.startsWith('http') ? photo.thumbnailUrl : `${API_BASE_URL}${photo.thumbnailUrl}`)
+                : (photo.url.startsWith('http') ? photo.url : `${API_BASE_URL}${photo.url}`);
+
+            photoElement.innerHTML = `
+                <img src="${imageUrl}" alt="${escapeHtml(photo.description || '照片')}" loading="lazy" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <i class="fa fa-search-plus text-white text-xl"></i>
+                </div>
+                <span class="absolute top-2 right-2 text-xs px-1.5 py-0.5 rounded ${photo.author === 'his' ? 'bg-his-primary/80' : 'bg-her-primary/80'} text-white">${photo.author === 'his' ? '他' : '她'}</span>
+                ${photo.description ? `
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white p-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                        ${escapeHtml(photo.description.substring(0, 30))}${photo.description.length > 30 ? '...' : ''}
+                    </div>
+                ` : ''}
+            `;
+        }
 
         photoElement.addEventListener('click', () => {
             openPhotoViewer(startIndex + index);
@@ -1268,7 +1306,7 @@ function updatePaginationControls(type, currentPage, totalPages, totalItems) {
         pageIndicators.appendChild(pageBtn);
     }
 }
-// 打开图片查看器
+// 打开图片/视频查看器
 function openPhotoViewer(index) {
     if (!photos[index]) return;
 
@@ -1276,52 +1314,66 @@ function openPhotoViewer(index) {
     const photo = photos[index];
     const viewer = document.getElementById('photo-viewer');
     const viewerImage = document.getElementById('viewer-image');
-    
-    // 先显示缩略图模糊作为 loading 占位
-    const thumbUrl = (photo.thumbnailUrl || photo.url).startsWith('http')
-        ? (photo.thumbnailUrl || photo.url)
-        : `${API_BASE_URL}${photo.thumbnailUrl || photo.url}`;
+    const viewerVideo = document.getElementById('viewer-video');
+
+    const mediaType = photo.mediaType || photo.media_type || 'image';
+    const isVideo = mediaType === 'video';
     const originalUrl = photo.url.startsWith('http') ? photo.url : `${API_BASE_URL}${photo.url}`;
 
-    document.getElementById('photo-caption').textContent = photo.description || '无描述';
-    document.getElementById('photo-desc-text').textContent = photo.description || '暂无描述';
+    document.getElementById('photo-caption').textContent = photo.description || (isVideo ? '视频' : '无描述');
+    document.getElementById('photo-desc-text').textContent = photo.description || (isVideo ? '一段视频' : '暂无描述');
     document.getElementById('photo-author-date').textContent =
         `${photo.author === 'his' ? '他' : '她'} · ${formatDate(photo.date)}`;
     loadPhotoComments(photo.id);
-
-    // 预加载缩略图，decode 确保完全解码后再显示
-    const thumbImg = new Image();
-    thumbImg.src = thumbUrl;
 
     function showViewer() {
         viewer.style.visibility = 'visible';
         document.body.style.overflow = 'hidden';
     }
 
-    thumbImg.decode().then(() => {
-        viewerImage.style.transition = 'none';
-        viewerImage.style.filter = 'blur(20px)';
-        viewerImage.style.transform = 'scale(1.05)';
-        viewerImage.src = thumbUrl;
+    if (isVideo) {
+        viewerImage.classList.add('hidden');
+        viewerVideo.classList.remove('hidden');
+        viewerVideo.src = originalUrl;
+        viewerVideo.load();
         showViewer();
+    } else {
+        viewerVideo.classList.add('hidden');
+        viewerVideo.pause?.();
+        viewerVideo.src = '';
+        viewerImage.classList.remove('hidden');
 
-        // 后台加载原图
-        const fullImg = new Image();
-        fullImg.src = originalUrl;
-        fullImg.decode().then(() => {
-            viewerImage.style.transition = 'filter 0.5s ease, transform 0.5s ease';
-            viewerImage.src = originalUrl;
-            viewerImage.style.filter = 'none';
-            viewerImage.style.transform = 'scale(1)';
+        const thumbUrl = (photo.thumbnailUrl || photo.url).startsWith('http')
+            ? (photo.thumbnailUrl || photo.url)
+            : `${API_BASE_URL}${photo.thumbnailUrl || photo.url}`;
+
+        const thumbImg = new Image();
+        thumbImg.src = thumbUrl;
+
+        thumbImg.decode().then(() => {
+            viewerImage.style.transition = 'none';
+            viewerImage.style.filter = 'blur(20px)';
+            viewerImage.style.transform = 'scale(1.05)';
+            viewerImage.src = thumbUrl;
+            showViewer();
+
+            const fullImg = new Image();
+            fullImg.src = originalUrl;
+            fullImg.decode().then(() => {
+                viewerImage.style.transition = 'filter 0.5s ease, transform 0.5s ease';
+                viewerImage.src = originalUrl;
+                viewerImage.style.filter = 'none';
+                viewerImage.style.transform = 'scale(1)';
+            }).catch(() => {
+                viewerImage.src = originalUrl;
+                viewerImage.style.filter = 'none';
+                viewerImage.style.transform = 'scale(1)';
+            });
         }).catch(() => {
-            viewerImage.src = originalUrl;
-            viewerImage.style.filter = 'none';
-            viewerImage.style.transform = 'scale(1)';
+            viewerImage.src = thumbUrl;
+            showViewer();
         });
-    }).catch(() => {
-        viewerImage.src = thumbUrl;
-        showViewer();
-    });
+    }
 }
 
 // 关闭图片查看器
@@ -1329,6 +1381,9 @@ function closePhotoViewer() {
     const viewer = document.getElementById('photo-viewer');
     viewer.style.visibility = 'hidden';
     document.getElementById('viewer-image').removeAttribute('src');
+    const viewerVideo = document.getElementById('viewer-video');
+    viewerVideo.pause?.();
+    viewerVideo.removeAttribute('src');
     document.body.style.overflow = '';
 }
 
@@ -1677,6 +1732,7 @@ function loadNewFeatures() {
     loadLoveLetters();
     loadDateIdeaCategories();
     loadStats();
+    loadAudios();
 }
 
 function initNewFeatureListeners() {
@@ -1734,6 +1790,17 @@ function initNewFeatureListeners() {
         e.preventDefault();
         addDateIdea();
     });
+
+    // 音频模块
+    document.getElementById('add-audio-btn')?.addEventListener('click', () => {
+        document.getElementById('audio-upload').click();
+    });
+    document.getElementById('audio-upload')?.addEventListener('change', handleAudioUpload);
+    document.getElementById('record-audio-btn')?.addEventListener('click', toggleRecorder);
+    document.getElementById('start-record-btn')?.addEventListener('click', startRecording);
+    document.getElementById('stop-record-btn')?.addEventListener('click', stopRecording);
+    document.getElementById('cancel-record-btn')?.addEventListener('click', cancelRecording);
+    document.getElementById('save-record-btn')?.addEventListener('click', saveRecording);
 }
 
 // ---- 纪念日 ----
@@ -2288,6 +2355,286 @@ async function addDateIdea() {
     });
     document.getElementById('idea-form-container').classList.add('hidden');
     document.getElementById('idea-form').reset();
+}
+
+// ============================================================
+// ---- 音频模块 ----
+// ============================================================
+let audios = [];
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingTimer = null;
+let recordingSeconds = 0;
+let audioStream = null;
+
+function loadAudios() {
+    fetch(`${API_BASE_URL}/api/audios`, { credentials: 'include' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && Array.isArray(data.data)) {
+                audios = data.data.filter(a => a.visible !== false);
+                renderAudios();
+            }
+        })
+        .catch(e => console.error('加载音频失败:', e));
+}
+
+function renderAudios() {
+    const container = document.getElementById('audios-list');
+    if (audios.length === 0) {
+        container.innerHTML = `
+            <div class="bg-white rounded-xl shadow-md p-6 text-center text-gray-500">
+                暂无音频，点击"录制"或"上传音频"记录你们的声音吧
+            </div>
+        `;
+        return;
+    }
+    container.innerHTML = audios.map(a => {
+        const url = a.url.startsWith('http') ? a.url : `${API_BASE_URL}${a.url}`;
+        const durationStr = a.duration ? formatDuration(a.duration) : '';
+        const dateStr = formatDate(a.date);
+        return `
+            <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md p-5 border border-white/50 hover:shadow-lg transition">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center flex-shrink-0 shadow-md">
+                        <i class="fa fa-music text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs px-2 py-0.5 rounded-full ${a.author === 'his' ? 'bg-his-light text-his-dark' : 'bg-her-light text-her-dark'}">
+                                    ${a.author === 'his' ? '他' : '她'}
+                                </span>
+                                ${a.caption ? `<span class="text-sm font-medium text-gray-700 truncate">${escapeHtml(a.caption)}</span>` : ''}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${durationStr ? `<span class="text-xs text-gray-400"><i class="fa fa-clock-o mr-1"></i>${durationStr}</span>` : ''}
+                                <span class="text-xs text-gray-400">${dateStr}</span>
+                                <button onclick="deleteAudio('${a.id}')" class="text-gray-300 hover:text-red-400 transition text-sm">
+                                    <i class="fa fa-trash-o"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <audio controls preload="none" class="w-full h-10 rounded-lg">
+                            <source src="${url}" type="audio/mpeg">
+                        </audio>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function formatDuration(seconds) {
+    if (!seconds || seconds <= 0) return '';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function handleAudioUpload(event) {
+    const files = event.target.files;
+    if (!files.length) return;
+
+    const formData = new FormData();
+    formData.append('audios', files[0]);
+    formData.append('caption', '');
+
+    const btn = document.getElementById('add-audio-btn');
+    const origText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>上传中...';
+    btn.disabled = true;
+
+    fetch(`${API_BASE_URL}/api/audios`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('音频上传成功！');
+            loadAudios();
+        } else {
+            showNotification('上传失败: ' + (data.message || ''), true);
+        }
+    })
+    .catch(e => {
+        console.error('音频上传失败:', e);
+        showNotification('上传失败', true);
+    })
+    .finally(() => {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+        document.getElementById('audio-upload').value = '';
+    });
+}
+
+function deleteAudio(id) {
+    if (!confirm('确定删除这条音频吗？')) return;
+    fetch(`${API_BASE_URL}/api/audios/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('音频已删除');
+            loadAudios();
+        }
+    })
+    .catch(e => console.error('删除音频失败:', e));
+}
+
+// ---- 语音录制 ----
+function toggleRecorder() {
+    const panel = document.getElementById('recorder-panel');
+    const isHidden = panel.classList.contains('hidden');
+    panel.classList.toggle('hidden');
+    if (isHidden) {
+        cancelRecording();
+    }
+}
+
+function startRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showNotification('您的设备不支持录音功能', true);
+        return;
+    }
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            audioStream = stream;
+            recordedChunks = [];
+            recordingSeconds = 0;
+
+            const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                ? { mimeType: 'audio/webm;codecs=opus' }
+                : {};
+
+            mediaRecorder = new MediaRecorder(stream, options);
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                    recordedChunks.push(e.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                if (audioStream) {
+                    audioStream.getTracks().forEach(t => t.stop());
+                    audioStream = null;
+                }
+                clearInterval(recordingTimer);
+                recordingTimer = null;
+
+                const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
+                const audioUrl = URL.createObjectURL(blob);
+
+                const preview = document.getElementById('record-preview');
+                const audioEl = preview.querySelector('audio');
+                audioEl.src = audioUrl;
+                preview.classList.remove('hidden');
+
+                document.getElementById('start-record-btn').classList.remove('hidden');
+                document.getElementById('stop-record-btn').classList.add('hidden');
+                document.getElementById('cancel-record-btn').classList.add('hidden');
+            };
+
+            mediaRecorder.start(100);
+            document.getElementById('start-record-btn').classList.add('hidden');
+            document.getElementById('stop-record-btn').classList.remove('hidden');
+            document.getElementById('cancel-record-btn').classList.remove('hidden');
+            document.getElementById('record-preview').classList.add('hidden');
+            document.getElementById('recorder-timer').textContent = '00:00';
+
+            recordingTimer = setInterval(() => {
+                recordingSeconds++;
+                const m = Math.floor(recordingSeconds / 60);
+                const s = recordingSeconds % 60;
+                document.getElementById('recorder-timer').textContent =
+                    `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }, 1000);
+
+            showNotification('开始录音...');
+        })
+        .catch(e => {
+            console.error('获取麦克风权限失败:', e);
+            showNotification('无法访问麦克风，请检查权限设置', true);
+        });
+}
+
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        showNotification('录音完成');
+    }
+}
+
+function cancelRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+    }
+    if (audioStream) {
+        audioStream.getTracks().forEach(t => t.stop());
+        audioStream = null;
+    }
+    if (recordingTimer) {
+        clearInterval(recordingTimer);
+        recordingTimer = null;
+    }
+    recordedChunks = [];
+    recordingSeconds = 0;
+    document.getElementById('recorder-timer').textContent = '00:00';
+    document.getElementById('start-record-btn').classList.remove('hidden');
+    document.getElementById('stop-record-btn').classList.add('hidden');
+    document.getElementById('cancel-record-btn').classList.add('hidden');
+    document.getElementById('record-preview').classList.add('hidden');
+}
+
+function saveRecording() {
+    if (recordedChunks.length === 0) {
+        showNotification('没有可保存的录音', true);
+        return;
+    }
+
+    const caption = document.getElementById('record-caption').value.trim();
+    const blob = new Blob(recordedChunks, { type: mediaRecorder?.mimeType || 'audio/webm' });
+    const formData = new FormData();
+    const ext = blob.type.includes('webm') ? '.webm' : '.mp3';
+    formData.append('audios', blob, `recording_${Date.now()}${ext}`);
+    formData.append('caption', caption);
+    formData.append('duration', recordingSeconds);
+
+    const btn = document.getElementById('save-record-btn');
+    const origText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>保存中...';
+    btn.disabled = true;
+
+    fetch(`${API_BASE_URL}/api/audios`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('录音保存成功！');
+            cancelRecording();
+            document.getElementById('recorder-panel').classList.add('hidden');
+            loadAudios();
+        } else {
+            showNotification('保存失败: ' + (data.message || ''), true);
+        }
+    })
+    .catch(e => {
+        console.error('保存录音失败:', e);
+        showNotification('保存失败', true);
+    })
+    .finally(() => {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+    });
 }
 
 // ============================================================

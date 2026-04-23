@@ -228,4 +228,31 @@ try {
     }
 } catch (e) { /* table may not exist yet */ }
 
+// 自动迁移：为已有数据库添加 media_type 列
+try {
+    const photoCols = db.prepare("PRAGMA table_info(photos)").all().map(c => c.name);
+    if (!photoCols.includes('media_type')) {
+        db.exec("ALTER TABLE photos ADD COLUMN media_type TEXT NOT NULL DEFAULT 'image'");
+    }
+} catch (e) { /* table may not exist yet */ }
+
+// 音频表
+db.exec(`
+CREATE TABLE IF NOT EXISTS audios (
+    id             TEXT    PRIMARY KEY,
+    caption        TEXT    NOT NULL DEFAULT '',
+    author         TEXT    NOT NULL CHECK (author IN ('his', 'her')),
+    filename       TEXT    NOT NULL,
+    originalname   TEXT    NOT NULL DEFAULT '',
+    url            TEXT    NOT NULL,
+    duration       REAL    NOT NULL DEFAULT 0,
+    date           TEXT    NOT NULL,
+    timestamp      INTEGER NOT NULL,
+    visible        INTEGER NOT NULL DEFAULT 1,
+    created_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_audios_date   ON audios (date);
+CREATE INDEX IF NOT EXISTS idx_audios_author ON audios (author);
+`);
+
 module.exports = db;

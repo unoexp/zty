@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const db = require('../utils/db');
-const { upload, generateThumbnail, deleteUploadedFile } = require('../utils/upload');
+const { upload, generateThumbnail, generateVideoThumbnail, deleteUploadedFile, getMediaType } = require('../utils/upload');
 const { authenticateUser, optionalAuth } = require('../middleware/auth');
 
 // 获取所有照片
@@ -12,47 +12,55 @@ router.get('/', optionalAuth, (req, res) => {
     const result = photos.map(p => ({
         ...p,
         thumbnailUrl: p.thumbnail_url,
+        mediaType: p.media_type || 'image',
         visible: !!p.visible,
         comments: commentStmt.all('photo', p.id)
     }));
     res.json({ success: true, data: result });
 });
 
-// 单张照片上传
+// 单张照片/视频上传
 router.post('/', authenticateUser, upload, async (req, res) => {
     try {
         const { caption } = req.body;
         const author = req.user.username;
 
         if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ success: false, message: '请上传照片' });
+            return res.status(400).json({ success: false, message: '请上传文件' });
         }
         const file = req.files[0];
         const timestamp = Date.now();
-        const thumbnail = await generateThumbnail(file.filename);
-        const thumbnailUrl = thumbnail.startsWith('thumbnail-')
-            ? `/uploads/thumbnails/${thumbnail}` : `/uploads/${thumbnail}`;
+        const mediaType = getMediaType(file.mimetype);
+
+        let thumbnailUrl = '';
+        if (mediaType === 'image') {
+            const thumbnail = await generateThumbnail(file.filename);
+            thumbnailUrl = thumbnail.startsWith('thumbnail-')
+                ? `/uploads/thumbnails/${thumbnail}` : `/uploads/${thumbnail}`;
+        } else if (mediaType === 'video') {
+            await generateVideoThumbnail(file.filename);
+        }
 
         const id = uuidv4();
         const date = new Date(timestamp).toISOString();
 
-        db.prepare(`INSERT INTO photos (id, caption, author, filename, originalname, url, thumbnail_url, date, timestamp, visible)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`)
-            .run(id, caption || '', author, file.filename, file.originalname, `/uploads/${file.filename}`, thumbnailUrl, date, timestamp);
+        db.prepare(`INSERT INTO photos (id, caption, author, filename, originalname, url, thumbnail_url, date, timestamp, visible, media_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`)
+            .run(id, caption || '', author, file.filename, file.originalname, `/uploads/${file.filename}`, thumbnailUrl, date, timestamp, mediaType);
 
         const newPhoto = db.prepare('SELECT * FROM photos WHERE id = ?').get(id);
-        res.json({ success: true, data: { ...newPhoto, thumbnailUrl: newPhoto.thumbnail_url, visible: true, comments: [] } });
+        res.json({ success: true, data: { ...newPhoto, thumbnailUrl: newPhoto.thumbnail_url, mediaType: newPhoto.media_type, visible: true, comments: [] } });
     } catch (error) {
-        console.error('照片上传失败:', error);
+        console.error('文件上传失败:', error);
         res.status(500).json({ success: false, message: `上传失败: ${error.message}` });
     }
 });
 
-// 批量上传照片
+// 批量上传照片/视频
 router.post('/batch', authenticateUser, upload, async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ success: false, message: '没有上传任何照片' });
+            return res.status(400).json({ success: false, message: '没有上传任何文件' });
         }
 
         const author = req.user.username;
@@ -60,24 +68,30 @@ router.post('/batch', authenticateUser, upload, async (req, res) => {
         const timestamp = Date.now();
         const date = new Date(timestamp).toISOString();
 
-        const insertStmt = db.prepare(`INSERT INTO photos (id, caption, description, author, filename, originalname, url, thumbnail_url, date, timestamp, visible)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`);
+        const insertStmt = db.prepare(`INSERT INTO photos (id, caption, description, author, filename, originalname, url, thumbnail_url, date, timestamp, visible, media_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`);
 
         const newPhotos = [];
         for (const file of req.files) {
-            const thumbnail = await generateThumbnail(file.filename);
-            const thumbnailUrl = thumbnail.startsWith('thumbnail-')
-                ? `/uploads/thumbnails/${thumbnail}` : `/uploads/${thumbnail}`;
+            const mediaType = getMediaType(file.mimetype);
+            let thumbnailUrl = '';
+            if (mediaType === 'image') {
+                const thumbnail = await generateThumbnail(file.filename);
+                thumbnailUrl = thumbnail.startsWith('thumbnail-')
+                    ? `/uploads/thumbnails/${thumbnail}` : `/uploads/${thumbnail}`;
+            } else if (mediaType === 'video') {
+                await generateVideoThumbnail(file.filename);
+            }
             const id = uuidv4();
 
-            insertStmt.run(id, '', description, author, file.filename, file.originalname, `/uploads/${file.filename}`, thumbnailUrl, date, timestamp);
+            insertStmt.run(id, '', description, author, file.filename, file.originalname, `/uploads/${file.filename}`, thumbnailUrl, date, timestamp, mediaType);
 
-            newPhotos.push({ id, filename: file.filename, url: `/uploads/${file.filename}`, thumbnailUrl, author, description, date, timestamp, visible: true, comments: [] });
+            newPhotos.push({ id, filename: file.filename, url: `/uploads/${file.filename}`, thumbnailUrl, mediaType, author, description, date, timestamp, visible: true, comments: [] });
         }
 
-        res.json({ success: true, message: `成功上传 ${newPhotos.length} 张照片`, data: newPhotos });
+        res.json({ success: true, message: `成功上传 ${newPhotos.length} 个文件`, data: newPhotos });
     } catch (error) {
-        console.error('照片上传失败:', error);
+        console.error('文件上传失败:', error);
         res.status(500).json({ success: false, message: `上传失败: ${error.message}` });
     }
 });

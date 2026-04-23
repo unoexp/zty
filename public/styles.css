@@ -563,6 +563,26 @@ section:first-child::before { display: none; }
 #dock-expand-btn.show { display: inline-flex; }
 #dock-expand-btn:hover { background: rgba(0,0,0,0.1); color: #6b7280; }
 
+/* ---- 视频播放器美化 ---- */
+#photo-viewer video {
+    border-radius: 12px;
+    background: #000;
+}
+
+/* ---- 音频播放器美化 ---- */
+#audios-list audio {
+    border-radius: 8px;
+    background: #f1f5f9;
+}
+#audios-list audio::-webkit-media-controls-panel {
+    background: #f1f5f9;
+}
+
+/* ---- 模拟录音可视化柱 ---- */
+#visualizer-bars div {
+    transition: height 0.15s ease;
+}
+
 /* ---- 响应式 ---- */
 @media (max-width: 640px) {
     body { padding: 0; }
