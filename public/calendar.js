@@ -77,14 +77,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch(e) {}
 
     if (!currentUser) {
-        const params = new URLSearchParams(window.location.search);
-        const user = params.get('user');
-        if (user === 'his' || user === 'her') {
-            currentUser = user;
-        } else {
-            window.location.href = '/login';
-            return;
-        }
+        window.location.href = '/login';
+        return;
     }
 
     initUserInterface();

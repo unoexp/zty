@@ -35,34 +35,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     try {
         const res = await fetch('/api/auth/me', { credentials: 'include' });
         if (!res.ok) {
-            // 未登录，兼容旧的URL参数模式
-            const params = new URLSearchParams(window.location.search);
-            const user = params.get('user');
-            if (user === 'his' || user === 'her') {
-                currentUser = user;
-            } else {
-                window.location.href = '/login';
-                return;
-            }
-        } else {
-            const data = await res.json();
-            // 仅允许 his/her 使用主应用，管理员请使用管理后台
-            if (data.user.username !== 'his' && data.user.username !== 'her') {
-                window.location.href = '/login';
-                return;
-            }
-            currentUser = data.user.username;
-        }
-    } catch (e) {
-        // 网络错误时降级到URL参数
-        const params = new URLSearchParams(window.location.search);
-        const user = params.get('user');
-        if (user === 'his' || user === 'her') {
-            currentUser = user;
-        } else {
             window.location.href = '/login';
             return;
         }
+        const data = await res.json();
+        // 仅允许 his/her 使用主应用，管理员请使用管理后台
+        if (data.user.username !== 'his' && data.user.username !== 'her') {
+            window.location.href = '/login';
+            return;
+        }
+        currentUser = data.user.username;
+    } catch (e) {
+        window.location.href = '/login';
+        return;
     }
 
     initUserInterface();

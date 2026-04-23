@@ -100,8 +100,8 @@
             }
         } catch(e) {}
         if (!currentUser) {
-            const params = new URLSearchParams(window.location.search);
-            currentUser = params.get('user') || 'his';
+            window.location.href = '/login';
+            return;
         }
         initUserInterface();
         initMap();
